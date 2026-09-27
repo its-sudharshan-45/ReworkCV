@@ -63,7 +63,8 @@
     "angularjs",
     "springboot",
     "cicd",
-    "Hackathon"
+    "Hackathon",
+    "Calibri"
   ],
   "ignorePaths": [
     "node_modules",

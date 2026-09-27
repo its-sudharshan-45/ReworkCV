@@ -7,8 +7,18 @@ import type { JobMatchAnalysis, ResumeDetail } from '@/features/resume/types/res
 
 // Minimal mock for Button (uses @/components/ui/button)
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, className }: { children: React.ReactNode; onClick?: () => void; className?: string }) => (
-    <button onClick={onClick} className={className}>{children}</button>
+  Button: ({
+    children,
+    onClick,
+    className,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    className?: string;
+  }) => (
+    <button onClick={onClick} className={className}>
+      {children}
+    </button>
   ),
 }));
 
@@ -72,12 +82,13 @@ const mockAnalysis: JobMatchAnalysis = {
     ],
     scorePercent: 80,
   },
-  strengths: [
-    'Strong React and TypeScript skills',
-    'Backend API experience with Node.js',
-  ],
+  strengths: ['Strong React and TypeScript skills', 'Backend API experience with Node.js'],
   recommendations: [
-    { priority: 'high', text: 'Add Angular or Vue experience', impact: 'Increases skill match score by 15%' },
+    {
+      priority: 'high',
+      text: 'Add Angular or Vue experience',
+      impact: 'Increases skill match score by 15%',
+    },
     { priority: 'medium', text: 'Include Docker in projects', impact: 'Improves DevOps alignment' },
   ],
 };
@@ -95,10 +106,10 @@ const mockResume: Partial<ResumeDetail> = {
   structuredData: {
     // StructuredResumeData: sections[] + skills[] at top level
     sections: [
-      { key: 'summary',     title: 'Summary',    content: 'Experienced developer...' },
-      { key: 'experience',  title: 'Experience', content: 'Company A, 2022–2024' },
-      { key: 'education',   title: 'Education',  content: 'B.E. Computer Science' },
-      { key: 'skills',      title: 'Skills',     content: 'React, TypeScript, Node.js' },
+      { key: 'summary', title: 'Summary', content: 'Experienced developer...' },
+      { key: 'experience', title: 'Experience', content: 'Company A, 2022–2024' },
+      { key: 'education', title: 'Education', content: 'B.E. Computer Science' },
+      { key: 'skills', title: 'Skills', content: 'React, TypeScript, Node.js' },
     ],
     skills: ['React', 'TypeScript', 'Node.js'],
   },
@@ -153,9 +164,7 @@ describe('CakeMeReport', () => {
       structuredData: { sections: [], skills: [] },
     };
     render(<CakeMeReport resume={emptyResume as ResumeDetail} />);
-    expect(
-      screen.getByText(/No skills data available/i),
-    ).toBeDefined();
+    expect(screen.getByText(/No skills data available/i)).toBeDefined();
   });
 
   it('does NOT render hardcoded SUDHARSHAN or fake phone/email', () => {
@@ -221,7 +230,7 @@ describe('CakeMeReport', () => {
     expect(screen.getByText('40%')).toBeDefined(); // Skills weight
     expect(screen.getByText('20%')).toBeDefined(); // Experience weight
     expect(screen.getByText('15%')).toBeDefined(); // Responsibilities weight
-    expect(screen.getByText('5%')).toBeDefined();  // Education weight
+    expect(screen.getByText('5%')).toBeDefined(); // Education weight
     expect(screen.getByText('85%')).toBeDefined(); // Skills score
     expect(screen.getByText('90%')).toBeDefined(); // Education score
   });
@@ -251,5 +260,35 @@ describe('CakeMeReport', () => {
     expect(screen.getByText('Alex Johnson')).toBeDefined();
     expect(screen.getByText('alex.johnson@example.com')).toBeDefined();
     expect(screen.getByText('555-0199')).toBeDefined();
+  });
+
+  it('triggers onDownloadReportPdf when clicking the Download Report button', () => {
+    const onDownloadReportPdf = vi.fn();
+    render(
+      <CakeMeReport
+        analysis={mockAnalysis}
+        resume={mockResume as ResumeDetail}
+        onDownloadReportPdf={onDownloadReportPdf}
+      />,
+    );
+
+    const downloadBtn = screen.getByRole('button', { name: /Download Report \(PDF\)/i });
+    downloadBtn.click();
+    expect(onDownloadReportPdf).toHaveBeenCalledTimes(1);
+  });
+
+  it('triggers onGenerateCoverLetter when clicking the Generate Cover Letter button', () => {
+    const onGenerateCoverLetter = vi.fn();
+    render(
+      <CakeMeReport
+        analysis={mockAnalysis}
+        resume={mockResume as ResumeDetail}
+        onGenerateCoverLetter={onGenerateCoverLetter}
+      />,
+    );
+
+    const coverLetterBtn = screen.getByRole('button', { name: /Generate Cover Letter/i });
+    coverLetterBtn.click();
+    expect(onGenerateCoverLetter).toHaveBeenCalledTimes(1);
   });
 });

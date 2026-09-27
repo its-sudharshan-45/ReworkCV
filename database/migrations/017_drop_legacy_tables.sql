@@ -118,17 +118,12 @@ BEGIN
     RAISE EXCEPTION 'SAFETY ABORT: resumes table is missing after migration 017!';
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'resume_versions') THEN
-    RAISE EXCEPTION 'SAFETY ABORT: resume_versions table is missing after migration 017!';
-  END IF;
-
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'resume_job_analysis') THEN
     RAISE EXCEPTION 'SAFETY ABORT: resume_job_analysis table is missing after migration 017!';
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'notifications') THEN
-    RAISE EXCEPTION 'SAFETY ABORT: notifications table is missing after migration 017!';
-  END IF;
+  -- NOTE: resume_versions and notifications were intentionally dropped in
+  -- migration 020 (cover_letters_and_cleanup). They are no longer core tables.
 
   RAISE NOTICE 'Migration 017 safety check PASSED — all core Resume Intelligence tables are intact.';
 END $$;

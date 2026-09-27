@@ -72,7 +72,7 @@ describe('LoginForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
 
     await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+      expect(navigate).toHaveBeenCalledWith('/analysis', { replace: true });
     });
   });
 });

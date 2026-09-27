@@ -10,11 +10,9 @@ const HomePage = lazy(() => import('@/pages/Home').then((m) => ({ default: m.Hom
 const LoginPage = lazy(() => import('@/pages/Login').then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('@/pages/Signup').then((m) => ({ default: m.SignupPage })));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallback').then((m) => ({ default: m.AuthCallbackPage })));
-const DashboardPage = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.DashboardPage })));
-const ProfilePage = lazy(() => import('@/pages/Profile').then((m) => ({ default: m.ProfilePage })));
-const ResumeStudioPage = lazy(() => import('@/pages/ResumeStudio').then((m) => ({ default: m.ResumeStudioPage })));
-const SavedPage = lazy(() => import('@/pages/Saved').then((m) => ({ default: m.SavedPage })));
-const NotificationsPage = lazy(() => import('@/pages/Notifications').then((m) => ({ default: m.NotificationsPage })));
+const ResumeAnalysisPage = lazy(() => import('@/pages/ResumeAnalysis').then((m) => ({ default: m.ResumeAnalysisPage })));
+const HistoryPage = lazy(() => import('@/pages/History').then((m) => ({ default: m.HistoryPage })));
+const CoverLettersPage = lazy(() => import('@/pages/CoverLetters').then((m) => ({ default: m.CoverLettersPage })));
 const SettingsPage = lazy(() => import('@/pages/Settings').then((m) => ({ default: m.SettingsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m.NotFoundPage })));
 
@@ -46,14 +44,20 @@ export function App() {
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/profile/resumes" element={<ResumeStudioPage />} />
-              <Route path="/resume" element={<Navigate to="/profile/resumes" replace />} />
-              <Route path="/resume/*" element={<Navigate to="/profile/resumes" replace />} />
-              <Route path="/saved" element={<SavedPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/analysis" element={<ResumeAnalysisPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              <Route path="/cover-letters" element={<CoverLettersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+
+              {/* Legacy / Convenience Redirects */}
+              <Route path="/dashboard" element={<Navigate to="/analysis" replace />} />
+              <Route path="/profile" element={<Navigate to="/settings" replace />} />
+              <Route path="/profile/resumes" element={<Navigate to="/analysis" replace />} />
+              <Route path="/resume" element={<Navigate to="/analysis" replace />} />
+              <Route path="/resume/*" element={<Navigate to="/analysis" replace />} />
+              <Route path="/resume-builder" element={<Navigate to="/analysis" replace />} />
+              <Route path="/saved" element={<Navigate to="/history" replace />} />
+              <Route path="/notifications" element={<Navigate to="/analysis" replace />} />
             </Route>
 
             {/* Catch-all 404 */}

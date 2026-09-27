@@ -1,29 +1,22 @@
-
-// cspell:disable
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
-import { CommandSearchModal } from './CommandSearchModal';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  /** Optional pre-resolved userName (passed by pages that already have it, e.g. Dashboard). */
   userName?: string;
 }
 
 export function DashboardLayout({ children, userName: propUserName }: DashboardLayoutProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Real user identity from Supabase session — no hardcoded defaults
   const [resolvedUserName, setResolvedUserName] = useState<string>('');
   const [resolvedUserEmail, setResolvedUserEmail] = useState<string>('');
 
   useEffect(() => {
-    // If the parent page already resolved the name, skip the extra fetch
     if (propUserName) {
       setResolvedUserName(propUserName);
       return;
@@ -45,26 +38,15 @@ export function DashboardLayout({ children, userName: propUserName }: DashboardL
           setResolvedUserEmail(email);
         }
       } catch {
-        // Not authenticated — TopHeader handles the empty state
+        // Not authenticated
       }
     }
 
     void loadUser();
   }, [propUserName]);
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#F7F8FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-[#6E44FF] selection:text-white antialiased">
+    <div className="min-h-screen bg-[#F7F8FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-[#16A36A] selection:text-white antialiased">
       <div className="flex flex-1 relative min-h-screen">
         {/* Desktop Collapsible Sidebar */}
         <div className="hidden md:block sticky top-0 h-screen z-40">
@@ -100,31 +82,21 @@ export function DashboardLayout({ children, userName: propUserName }: DashboardL
 
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          {/* Top Header */}
           <TopHeader
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
-            onOpenSearch={() => setIsSearchOpen(true)}
             userName={propUserName || resolvedUserName}
             userEmail={resolvedUserEmail}
           />
 
-          {/* Main Dashboard Canvas */}
           <main className="flex-1 p-4 sm:p-6 lg:p-7 max-w-[1600px] w-full mx-auto space-y-6">
             {children}
           </main>
 
-          {/* Footer */}
           <footer className="py-4 px-6 border-t border-slate-200/60 dark:border-slate-800/60 text-center text-xs text-slate-400">
-            <p>UpSkilr AI Career Command Center &copy; {new Date().getFullYear()} • Elevating tech candidates worldwide.</p>
+            <p>Rework CV &copy; {new Date().getFullYear()} • AI-Powered Resume Intelligence &amp; Job Match Platform.</p>
           </footer>
         </div>
       </div>
-
-      {/* Global Command Search Modal */}
-      <CommandSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
     </div>
   );
 }

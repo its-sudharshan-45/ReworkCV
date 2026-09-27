@@ -9,38 +9,39 @@ ElevateCV is an end-to-end career intelligence platform that bridges the gap bet
 ## 🚀 Key Capabilities
 
 * **Intelligent Document Extraction:** High-fidelity PDF parsing and Named Entity Recognition (NER) to convert unstructured resumes into structured, queryable data.
-* **Target Job Description Matching:** Real-time ATS readiness scoring across skills, experience alignment, and keyword density.
-* **Deep Gap Analysis:** Actionable reports highlighting missing competencies, impact-driven bullet point suggestions, and phrasing enhancements.
-* **Iterative AI Optimization:** Interactive accept/reject workflow for AI recommendations with automated version tracking and comparison.
-* **Production-Ready Artifacts:** High-quality resume preview with one-click export to ATS-friendly PDF and DOCX formats.
+* **Target Job Description Matching:** Real-time ATS readiness scoring across skills, experience alignment, responsibilities, keywords, education, and projects.
+* **Professional Resume Analysis Report:** In-depth ATS readiness report with weighted scoring breakdowns, detected vs. missing skills, candidate strengths, actionable recommendations, and one-click PDF report export.
+* **AI Cover Letter Generation:** First-class, grounded cover letter generation tailored to specific job descriptions with strict anti-hallucination guardrails (only referencing verified candidate facts).
+* **Cover Letter Studio:** Rich in-browser cover letter editing, prompt-based regeneration, instant clipboard copy, and production-grade PDF and DOCX downloads.
 
 ---
 
 ## 🛠️ Tech Stack
 
 * **Frontend:** React 19, Vite, TypeScript, Tailwind CSS, Radix UI, Framer Motion
-* **Backend:** Node.js, Express, TypeScript, Zod, Vitest
-* **Database & Auth:** PostgreSQL (Supabase), pgvector
-* **AI Runtime:** Multi-provider LLM orchestration (Groq, Anthropic, OpenAI) with schema validation and fallback handling
+* **Backend:** Node.js, Express, TypeScript, Zod, Vitest, pdfkit, docx
+* **Database & Auth:** PostgreSQL (Supabase), Row-Level Security (RLS)
+* **AI Runtime:** Multi-provider LLM orchestration (Groq, Anthropic, OpenAI) with strict schema validation and fallback handling
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-ElevateCV/
+ReworkCV/
 ├── frontend/         # React 19 + Vite application
 │   ├── src/
-│   │   ├── features/ # Feature modules (resume, auth, profile, notification)
-│   │   └── components/
+│   │   ├── features/ # Feature modules (resume, cover-letter, auth)
+│   │   ├── components/ # Dashboard layout, UI components, landing sections
+│   │   └── pages/    # Analysis, History, Cover Letters, Settings
 │   └── package.json
 ├── backend/          # Express REST API
 │   ├── src/
-│   │   ├── ai/       # AI adapters, normalizers, inference engine
-│   │   ├── modules/  # Resume, profile, notification modules
+│   │   ├── ai/       # NER, JD parser, resume-job matcher, cover-letter generator
+│   │   ├── modules/  # Resume, cover-letter, and profile modules
 │   │   └── config/   # Environment and Supabase client configs
 │   └── package.json
-├── database/         # PostgreSQL migrations & documentation
+├── database/         # PostgreSQL migrations (including cover_letters & cleanup)
 └── docs/             # Architecture and implementation notes
 ```
 

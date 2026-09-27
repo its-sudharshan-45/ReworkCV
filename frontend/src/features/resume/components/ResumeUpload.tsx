@@ -1,4 +1,3 @@
-
 import { DragEvent, FormEvent, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormMessage } from '@/components/ui/form-message';
@@ -21,13 +20,16 @@ import {
 
 interface ResumeUploadProps {
   onUploadAndAnalyze: (file: File, jobDescription: string, jobTitle?: string) => Promise<void>;
-  onAnalyzeSavedResume?: (resumeId: string, jobDescription: string, jobTitle?: string) => Promise<void>;
+  onAnalyzeSavedResume?: (
+    resumeId: string,
+    jobDescription: string,
+    jobTitle?: string,
+  ) => Promise<void>;
   isUploading: boolean;
   isProcessing: boolean;
   savedResumes?: ResumeListItem[];
   onSelectSavedResume?: (resumeId: string) => void;
 }
-
 
 export function ResumeUpload({
   onUploadAndAnalyze,
@@ -162,14 +164,15 @@ export function ResumeUpload({
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-10 shadow-sm space-y-8">
+    <div className="space-y-8 rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm sm:p-10 dark:border-slate-800 dark:bg-slate-900">
       {/* Header matching user image */}
       <div className="space-y-2 text-left">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#114B3E] dark:text-emerald-400 tracking-tight">
+        <h1 className="text-2xl font-extrabold tracking-tight text-[#114B3E] sm:text-3xl lg:text-4xl dark:text-emerald-400">
           Secure Your Interview Chances With a Tailored Resume
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-normal">
-          Turn applications into interviews with personalized suggestions, ATS scoring and matching cover letters.
+        <p className="text-sm font-normal text-slate-600 sm:text-base dark:text-slate-400">
+          Turn applications into interviews with personalized suggestions, ATS scoring and matching
+          cover letters.
         </p>
       </div>
 
@@ -177,51 +180,51 @@ export function ResumeUpload({
         {/* Step 1: Upload Your Resume* */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <span className="text-[#114B3E] dark:text-emerald-400 font-extrabold text-lg">①</span>
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800 sm:text-lg dark:text-slate-200">
+              <span className="text-lg font-extrabold text-[#114B3E] dark:text-emerald-400">①</span>
               <span>Upload Your Resume</span>
               <span className="text-red-500">*</span>
             </h2>
           </div>
 
           {/* Pill Tabs for Step 1 */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setResumeMode('upload')}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                 resumeMode === 'upload'
-                  ? 'border-2 border-[#007A5A] text-[#007A5A] bg-[#007A5A]/5 dark:bg-[#007A5A]/15 font-bold shadow-xs'
-                  : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <FileUp className="w-3.5 h-3.5" />
+              <FileUp className="h-3.5 w-3.5" />
               <span>Upload File</span>
             </button>
 
             <button
               type="button"
               onClick={() => setResumeMode('saved')}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                 resumeMode === 'saved'
-                  ? 'border-2 border-[#007A5A] text-[#007A5A] bg-[#007A5A]/5 dark:bg-[#007A5A]/15 font-bold shadow-xs'
-                  : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="h-3.5 w-3.5" />
               <span>Use Saved Resume</span>
             </button>
 
             <button
               type="button"
               onClick={() => setResumeMode('paste')}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                 resumeMode === 'paste'
-                  ? 'border-2 border-[#007A5A] text-[#007A5A] bg-[#007A5A]/5 dark:bg-[#007A5A]/15 font-bold shadow-xs'
-                  : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <Type className="w-3.5 h-3.5" />
+              <Type className="h-3.5 w-3.5" />
               <span>Paste Text</span>
             </button>
           </div>
@@ -234,13 +237,13 @@ export function ResumeUpload({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => !isBusy && inputRef.current?.click()}
-                className={`relative flex flex-col items-center justify-center p-8 sm:p-10 rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer ${
+                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-all duration-200 sm:p-10 ${
                   isDragOver
-                    ? 'border-[#007A5A] bg-[#007A5A]/10 scale-[0.99]'
+                    ? 'scale-[0.99] border-[#007A5A] bg-[#007A5A]/10'
                     : selectedFile
                       ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                      : 'border-slate-300 dark:border-slate-700 hover:border-[#007A5A] bg-[#F7FAF8] dark:bg-slate-800/40'
-                } ${isBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      : 'border-slate-300 bg-[#F7FAF8] hover:border-[#007A5A] dark:border-slate-700 dark:bg-slate-800/40'
+                } ${isBusy ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 <input
                   ref={inputRef}
@@ -255,25 +258,25 @@ export function ResumeUpload({
                 />
 
                 {!selectedFile ? (
-                  <div className="flex flex-col items-center text-center space-y-1.5">
-                    <span className="text-sm sm:text-base font-bold text-[#007A5A] dark:text-emerald-400 hover:underline">
+                  <div className="flex flex-col items-center space-y-1.5 text-center">
+                    <span className="text-sm font-bold text-[#007A5A] hover:underline sm:text-base dark:text-emerald-400">
                       Upload new files
                     </span>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">
                       Drop files here or click to upload.
                     </p>
                   </div>
                 ) : (
                   <div
-                    className="w-full flex items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/30 shadow-xs"
+                    className="shadow-xs flex w-full items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-white p-4 dark:bg-slate-900"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-5 h-5" />
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                        <FileText className="h-5 w-5" />
                       </div>
                       <div className="truncate text-left">
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                        <p className="truncate text-xs font-bold text-slate-900 sm:text-sm dark:text-slate-100">
                           {selectedFile.name}
                         </p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -282,8 +285,8 @@ export function ResumeUpload({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Attached
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Attached
                       </span>
                       <button
                         type="button"
@@ -293,10 +296,10 @@ export function ResumeUpload({
                           if (inputRef.current) inputRef.current.value = '';
                         }}
                         disabled={isBusy}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                         title="Remove file"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -304,13 +307,13 @@ export function ResumeUpload({
               </div>
 
               {/* Helper Notes below dashed box */}
-              <div className="space-y-1 pt-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              <div className="space-y-1 pt-1 text-[11px] text-slate-500 sm:text-xs dark:text-slate-400">
                 <p className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <Info className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
                   <span>Supported formats: .pdf, .doc, .docx. Max size: 5 MB.</span>
                 </p>
                 <p className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <Info className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
                   <span>All languages supported.</span>
                 </p>
               </div>
@@ -319,7 +322,7 @@ export function ResumeUpload({
 
           {/* Tab 2: Use Saved Resume */}
           {resumeMode === 'saved' && (
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#F7FAF8] dark:bg-slate-800/40 space-y-3">
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-[#F7FAF8] p-5 dark:border-slate-800 dark:bg-slate-800/40">
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Select an existing resume from your account:
               </p>
@@ -328,10 +331,10 @@ export function ResumeUpload({
                   {savedResumes.map((res) => (
                     <label
                       key={res.id}
-                      className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3.5 transition-all ${
                         selectedSavedId === res.id
-                          ? 'border-[#007A5A] bg-[#007A5A]/10 text-slate-900 dark:text-slate-100 font-bold'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                          ? 'border-[#007A5A] bg-[#007A5A]/10 font-bold text-slate-900 dark:text-slate-100'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -351,8 +354,9 @@ export function ResumeUpload({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                  No previously saved resumes found. Please switch to "Upload File" to add your resume.
+                <p className="text-xs italic text-slate-500 dark:text-slate-400">
+                  No previously saved resumes found. Please switch to "Upload File" to add your
+                  resume.
                 </p>
               )}
             </div>
@@ -366,7 +370,7 @@ export function ResumeUpload({
                 onChange={(e) => setPastedResumeText(e.target.value)}
                 placeholder="Paste the raw text of your resume here (Summary, Work Experience, Education, Technical Skills)..."
                 rows={6}
-                className="w-full text-xs sm:text-sm p-4 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 focus:border-[#007A5A]"
+                className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-xs text-slate-900 placeholder-slate-400 focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
               <p className="text-[11px] text-slate-400">
                 {pastedResumeText.length} characters entered
@@ -378,34 +382,34 @@ export function ResumeUpload({
         {/* Step 2: Add a Job Description* */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <span className="text-[#114B3E] dark:text-emerald-400 font-extrabold text-lg">②</span>
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800 sm:text-lg dark:text-slate-200">
+              <span className="text-lg font-extrabold text-[#114B3E] dark:text-emerald-400">②</span>
               <span>Add a Job Description</span>
               <span className="text-red-500">*</span>
             </h2>
           </div>
 
           {/* Pill Tabs for Step 2 */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setJdMode('paste')}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                 jdMode === 'paste'
-                  ? 'border-2 border-[#007A5A] text-[#007A5A] bg-[#007A5A]/5 dark:bg-[#007A5A]/15 font-bold shadow-xs'
-                  : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <Type className="w-3.5 h-3.5" />
+              <Type className="h-3.5 w-3.5" />
               <span>Paste Text</span>
             </button>
 
             <button
               type="button"
               onClick={() => jdFileInputRef.current?.click()}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800`}
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800`}
             >
-              <FileUp className="w-3.5 h-3.5" />
+              <FileUp className="h-3.5 w-3.5" />
               <span>Upload File</span>
             </button>
             <input
@@ -423,7 +427,7 @@ export function ResumeUpload({
               htmlFor="job-title-input"
               className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
             >
-              Job Title <span className="text-slate-400 font-normal">(Optional)</span>
+              Job Title <span className="font-normal text-slate-400">(Optional)</span>
             </label>
             <input
               id="job-title-input"
@@ -432,7 +436,7 @@ export function ResumeUpload({
               onChange={(e) => setJobTitle(e.target.value)}
               placeholder="e.g. Senior Frontend Engineer"
               disabled={isBusy}
-              className="w-full text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 focus:border-[#007A5A] transition-all"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 transition-all focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
           </div>
 
@@ -446,11 +450,17 @@ export function ResumeUpload({
               placeholder="Paste the full job description here. The more details you provide, the better we can check your resume's fit."
               rows={6}
               disabled={isBusy}
-              className="w-full text-xs sm:text-sm p-4 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 focus:border-[#007A5A] transition-all"
+              className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-xs text-slate-900 placeholder-slate-400 transition-all focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
             <div className="flex items-center justify-between text-[11px] text-slate-400">
-              <span>{charCount >= minChars ? '✓ Job description provided' : `Minimum ${minChars} characters`}</span>
-              <span>{charCount.toLocaleString()} / {maxChars.toLocaleString()}</span>
+              <span>
+                {charCount >= minChars
+                  ? '✓ Job description provided'
+                  : `Minimum ${minChars} characters`}
+              </span>
+              <span>
+                {charCount.toLocaleString()} / {maxChars.toLocaleString()}
+              </span>
             </div>
           </div>
         </div>
@@ -463,16 +473,16 @@ export function ResumeUpload({
           <Button
             type="submit"
             disabled={isBusy}
-            className="w-full py-4 sm:py-5 rounded-2xl bg-[#007A5A] hover:bg-[#006349] text-white text-sm sm:text-base font-bold shadow-md shadow-[#007A5A]/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#007A5A] py-4 text-sm font-bold text-white shadow-md shadow-[#007A5A]/20 transition-all hover:bg-[#006349] sm:py-5 sm:text-base"
           >
             {isBusy ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
                 <span>Running AI ATS Match Analysis…</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-5 h-5 text-emerald-200" />
+                <Sparkles className="h-5 w-5 text-emerald-200" />
                 <span>Scan & Tailor Resume Fit</span>
               </>
             )}

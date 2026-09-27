@@ -1,6 +1,5 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { FormMessage } from '@/components/ui/form-message';
 import {
   analyzeResumeForJob,
@@ -11,27 +10,23 @@ import {
   listResumes,
   processResume,
   uploadResume,
+  downloadResumeReportPdf,
 } from '@/features/resume/api/resume.api';
+import { generateCoverLetter } from '@/features/cover-letter/api/cover-letter.api';
 import { ResumeList } from '@/features/resume/components/ResumeList';
 import { ResumeUpload } from '@/features/resume/components/ResumeUpload';
 import { CakeMeReport } from '@/features/resume/components/CakeMeReport';
-import { ResumeVersionManager } from '@/features/resume/components/ResumeVersionManager';
 import type {
   JobMatchAnalysis,
   ResumeDetail,
   ResumeListItem,
 } from '@/features/resume/types/resume';
 import { ApiClientError } from '@/lib/api/client';
-import {
-  Sparkles,
-  FileText,
-  ArrowLeft,
-  History,
-  CheckCircle2,
-} from 'lucide-react';
+import { FileText, Sparkles, CheckCircle2, History } from 'lucide-react';
 
 export function ResumePage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const queryResumeId = searchParams.get('resumeId');
 
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
@@ -48,50 +43,56 @@ export function ResumePage() {
   const [jobMatchAnalysis, setJobMatchAnalysis] = useState<JobMatchAnalysis | null>(null);
   const [jobAnalysisId, setJobAnalysisId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState<boolean>(false);
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
 
-  const loadResumes = useCallback(async (autoSelect = false) => {
-    setIsLoading(true);
-    setError(null);
+  // Keep target JD across operations for seamless cover letter generation
+  const [lastJdText, setLastJdText] = useState<string>('');
+  const [lastJobTitle, setLastJobTitle] = useState<string>('');
 
-    try {
-      const data = await listResumes();
-      const enrichedResumes = await Promise.all(
-        (data.resumes || []).map(async (res) => {
-          try {
-            const analysesData = await listJobAnalyses(res.id);
-            if (analysesData.analyses && analysesData.analyses.length > 0) {
-              return {
-                ...res,
-                score: analysesData.analyses[0].matchScore,
-              };
+  const loadResumes = useCallback(
+    async (autoSelect = false) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await listResumes();
+        const enrichedResumes = await Promise.all(
+          (data.resumes || []).map(async (res) => {
+            try {
+              const analysesData = await listJobAnalyses(res.id);
+              if (analysesData.analyses && analysesData.analyses.length > 0) {
+                return {
+                  ...res,
+                  score: analysesData.analyses[0].matchScore,
+                };
+              }
+            } catch {
+              // keep existing score
             }
-          } catch {
-            // keep existing score
-          }
-          return res;
-        }),
-      );
-      setResumes(enrichedResumes);
+            return res;
+          }),
+        );
+        setResumes(enrichedResumes);
 
-      // Auto-select targeted resume if query param matches, else first resume if none selected yet
-      if (enrichedResumes.length > 0) {
-        if (queryResumeId && enrichedResumes.some((r) => r.id === queryResumeId)) {
-          void handleSelect(queryResumeId);
-        } else if (autoSelect || !selectedResumeId) {
-          void handleSelect(enrichedResumes[0].id);
+        if (enrichedResumes.length > 0) {
+          if (queryResumeId && enrichedResumes.some((r) => r.id === queryResumeId)) {
+            void handleSelect(queryResumeId);
+          } else if (autoSelect || !selectedResumeId) {
+            void handleSelect(enrichedResumes[0].id);
+          }
         }
+      } catch (loadError) {
+        setError(
+          loadError instanceof ApiClientError
+            ? loadError.message
+            : 'Unable to load resumes. Please verify you are logged in and try again.',
+        );
+      } finally {
+        setIsLoading(false);
       }
-    } catch (loadError) {
-      console.error('Failed to load resumes:', loadError);
-      setError(
-        loadError instanceof ApiClientError
-          ? loadError.message
-          : 'Unable to load resumes. Please verify you are logged in and try again.',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedResumeId, queryResumeId]);
+    },
+    [selectedResumeId, queryResumeId],
+  );
 
   useEffect(() => {
     void loadResumes(true);
@@ -115,9 +116,7 @@ export function ResumePage() {
           setJobAnalysisId(latestData.analysis.analysisId);
           matchScore = latestData.analysis.data.matchScore;
           setResumes((current) =>
-            current.map((r) =>
-              r.id === resumeId ? { ...r, score: matchScore } : r,
-            ),
+            current.map((r) => (r.id === resumeId ? { ...r, score: matchScore } : r)),
           );
         }
       } catch {
@@ -142,17 +141,17 @@ export function ResumePage() {
     }
   }
 
-
   // Unified Resume Upload + Job Description Analysis flow
   async function handleUploadAndAnalyze(file: File, jobDescription: string, jobTitle?: string) {
     setIsUploading(true);
     setIsProcessing(false);
     setError(null);
     setSuccessMessage(null);
-    // Clear any previous report while running a new analysis
     setShowReport(false);
     setJobMatchAnalysis(null);
     setJobAnalysisId(null);
+    setLastJdText(jobDescription);
+    setLastJobTitle(jobTitle || '');
 
     try {
       // 1. Upload resume
@@ -160,17 +159,13 @@ export function ResumePage() {
       setSelectedResumeId(data.resume.id);
       setSelectedResume(data.resume);
 
-      // 2. Process through Hugging Face NER extraction
+      // 2. Process through NER extraction
       setIsProcessing(true);
       const processed = await processResume(data.resume.id);
       setSelectedResume(processed.resume);
 
       // 3. Run Job-Specific ATS match analysis
-      const jobMatchRes = await analyzeResumeForJob(
-        processed.resume.id,
-        jobDescription,
-        jobTitle,
-      );
+      const jobMatchRes = await analyzeResumeForJob(processed.resume.id, jobDescription, jobTitle);
 
       const matchedScore = jobMatchRes.data.matchScore;
       setJobMatchAnalysis(jobMatchRes.data);
@@ -182,7 +177,6 @@ export function ResumePage() {
       };
       setSelectedResume(updatedResume);
 
-      // Add to resumes list with synchronized match score
       setResumes((current) => [
         {
           ...data.resume,
@@ -192,7 +186,6 @@ export function ResumePage() {
         ...current.filter((r) => r.id !== data.resume.id),
       ]);
 
-      // Display the completed report below
       setShowReport(true);
       setSuccessMessage('Resume & Job Description successfully analyzed!');
     } catch (uploadError) {
@@ -201,95 +194,78 @@ export function ResumePage() {
           ? uploadError.message
           : 'Unable to analyze resume against job description. Please try again.',
       );
-      setShowReport(false);
     } finally {
       setIsUploading(false);
       setIsProcessing(false);
     }
   }
 
-  // Unified Saved Resume + Job Description Analysis flow
-  async function handleAnalyzeSavedResume(resumeId: string, jobDescription: string, jobTitle?: string) {
+  // Analyze an existing uploaded resume against a new job description
+  async function handleAnalyzeSavedResume(
+    resumeId: string,
+    jobDescription: string,
+    jobTitle?: string,
+  ) {
     setIsProcessing(true);
     setError(null);
     setSuccessMessage(null);
     setShowReport(false);
     setJobMatchAnalysis(null);
     setJobAnalysisId(null);
+    setLastJdText(jobDescription);
+    setLastJobTitle(jobTitle || '');
 
     try {
-      // 1. Ensure resume is processed before running job analysis
-      const resumeData = await getResume(resumeId);
-      let activeResume = resumeData.resume;
-      if (activeResume.processingStatus !== 'PROCESSED') {
-        const processed = await processResume(resumeId);
-        activeResume = processed.resume;
-      }
-
-      // 2. Run Job-Specific ATS match analysis
-      const jobMatchRes = await analyzeResumeForJob(
-        resumeId,
-        jobDescription,
-        jobTitle,
-      );
-
+      const jobMatchRes = await analyzeResumeForJob(resumeId, jobDescription, jobTitle);
       const matchedScore = jobMatchRes.data.matchScore;
+
       setJobMatchAnalysis(jobMatchRes.data);
       setJobAnalysisId(jobMatchRes.analysisId);
 
-      const updatedResume = {
-        ...activeResume,
-        score: matchedScore,
-      };
       setSelectedResumeId(resumeId);
-      setSelectedResume(updatedResume);
+      const detailRes = await getResume(resumeId);
+      setSelectedResume({
+        ...detailRes.resume,
+        score: matchedScore,
+      });
 
-      // Update resume list score
       setResumes((current) =>
-        current.map((r) =>
-          r.id === resumeId
-            ? { ...r, processingStatus: 'PROCESSED', score: matchedScore }
-            : r,
-        ),
+        current.map((r) => (r.id === resumeId ? { ...r, score: matchedScore } : r)),
       );
 
       setShowReport(true);
-      setSuccessMessage('Saved resume successfully analyzed against job description!');
+      setSuccessMessage('Job description match analysis completed!');
     } catch (analysisError) {
       setError(
         analysisError instanceof ApiClientError
           ? analysisError.message
-          : 'Unable to analyze saved resume against job description. Please try again.',
+          : 'Unable to analyze resume against job description. Please try again.',
       );
-      setShowReport(false);
     } finally {
       setIsProcessing(false);
     }
   }
 
   async function handleDelete(resumeId: string) {
-    const confirmed = window.confirm('Delete this resume? This action cannot be undone.');
-    if (!confirmed) {
-      return;
-    }
+    if (!confirm('Are you sure you want to delete this resume?')) return;
 
     setDeletingResumeId(resumeId);
     setError(null);
 
     try {
       await deleteResume(resumeId);
-      const remaining = resumes.filter((item) => item.id !== resumeId);
-      setResumes(remaining);
+      const nextResumes = resumes.filter((r) => r.id !== resumeId);
+      setResumes(nextResumes);
 
-      // If the deleted resume was currently displayed, hide the report and clear active selection
       if (selectedResumeId === resumeId) {
-        setSelectedResumeId(null);
-        setSelectedResume(null);
-        setJobMatchAnalysis(null);
-        setJobAnalysisId(null);
-        setShowReport(false);
+        if (nextResumes.length > 0) {
+          void handleSelect(nextResumes[0].id);
+        } else {
+          setSelectedResumeId(null);
+          setSelectedResume(null);
+          setShowReport(false);
+        }
       }
-      setSuccessMessage('Resume deleted successfully.');
     } catch (deleteError) {
       setError(
         deleteError instanceof ApiClientError
@@ -297,80 +273,116 @@ export function ResumePage() {
           : 'Unable to delete resume. Please try again.',
       );
     } finally {
-      setDeletingResumeId(null);
+      setDeletingIdNull();
+    }
+  }
+
+  function setDeletingIdNull() {
+    setDeletingResumeId(null);
+  }
+
+  async function handleDownloadReportPdf() {
+    if (!selectedResume) return;
+    try {
+      await downloadResumeReportPdf(selectedResume.id);
+    } catch {
+      setError('Failed to download report PDF. Please try again.');
+    }
+  }
+
+  async function handleGenerateCoverLetter() {
+    if (!selectedResume) return;
+    setIsGeneratingCoverLetter(true);
+    setError(null);
+    try {
+      const res = await generateCoverLetter({
+        resumeId: selectedResume.id,
+        jobAnalysisId: jobAnalysisId ?? undefined,
+        jobTitle: lastJobTitle || undefined,
+        jobDescription: lastJdText || 'Target Role Analysis',
+        tone: 'professional',
+      });
+      navigate(`/cover-letters?id=${res.coverLetter.id}`);
+    } catch {
+      setError('Failed to generate cover letter. Please try again.');
+    } finally {
+      setIsGeneratingCoverLetter(false);
     }
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Top Bar Navigation */}
-      <div className="flex items-center justify-between no-print">
-        <Button asChild variant="outline" className="rounded-xl text-xs font-bold">
-          <Link to="/dashboard">
-            <ArrowLeft className="w-3.5 h-3.5 mr-1 text-slate-500" />
-            Back to Dashboard
-          </Link>
-        </Button>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col justify-between gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 items-center rounded-full bg-[#16A36A]/10 px-2.5 text-[11px] font-bold text-[#16A36A] dark:bg-[#16A36A]/20">
+              AI Resume Intelligence
+            </span>
+          </div>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+            Resume Analysis &amp; Job Match
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Upload your resume and paste a target job description to get an instant ATS score, deep skill gap analysis, and tailored AI cover letter.
+          </p>
+        </div>
       </div>
 
-      {/* Messages */}
-      <FormMessage message={error ?? undefined} />
-      {successMessage ? (
-        <div
-          className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-300 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800"
-          role="status"
-          aria-live="polite"
-        >
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+      {/* Global Alerts */}
+      {error && <FormMessage message={error} />}
+      {successMessage && (
+        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-50/80 p-4 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
           <span>{successMessage}</span>
         </div>
-      ) : null}
+      )}
 
-      {/* Unified Resume + Job Description Upload Section */}
-      <div className="no-print">
+      {/* Unified Resume Upload & Job Description Form */}
+      <div className="space-y-4">
         <ResumeUpload
           onUploadAndAnalyze={handleUploadAndAnalyze}
           onAnalyzeSavedResume={handleAnalyzeSavedResume}
           isUploading={isUploading}
           isProcessing={isProcessing}
           savedResumes={resumes}
-          onSelectSavedResume={handleSelect}
+          onSelectSavedResume={(id) => void handleSelect(id)}
         />
       </div>
 
-      {/* History & Active Resume List */}
-      <div className="space-y-4 no-print">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <History className="w-4 h-4 text-[#007A5A]" />
-            Your Uploaded Resumes ({resumes.length})
-          </h3>
-        </div>
-
-        {isLoading ? (
-          <p className="text-xs text-slate-400 p-4 text-center">Loading your resumes…</p>
-        ) : (
+      {/* Previously Analyzed Resumes */}
+      {resumes.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+              <History className="h-3.5 w-3.5" />
+              Analyzed Resumes ({resumes.length})
+            </h2>
+          </div>
           <ResumeList
             resumes={resumes}
             selectedResumeId={selectedResumeId}
-            onSelect={handleSelect}
-            onDelete={handleDelete}
+            onSelect={(id: string) => void handleSelect(id)}
+            onDelete={(id: string) => void handleDelete(id)}
             deletingResumeId={deletingResumeId}
           />
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Analysis Report Section - Only displayed once analysis ends or View Analysis is clicked */}
-      {showReport && selectedResume ? (
-        <div id="analysis-report-section" className="space-y-8 pt-4 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-300">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
+      {/* Professional Resume Analysis Report */}
+      {selectedResume && showReport ? (
+        <div
+          id="analysis-report-section"
+          className="animate-in fade-in space-y-6 border-t border-slate-200 pt-6 duration-300 dark:border-slate-800"
+        >
+          <div className="no-print flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#007A5A]" />
-                Analysis Results: {selectedResume.originalFilename}
+              <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
+                <FileText className="h-5 w-5 text-[#16A36A]" />
+                Analysis Report: {selectedResume.originalFilename}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Evaluation based on Hugging Face NER extraction & ATS Job Description criteria.
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Full ATS readiness audit, requirement coverage, and gap breakdown.
               </p>
             </div>
           </div>
@@ -379,22 +391,14 @@ export function ResumePage() {
             <FormMessage message={selectedResume.failureReason} />
           ) : null}
 
-          {/* Render structured clean report */}
-          <div className="space-y-8">
-            <CakeMeReport
-              analysis={jobMatchAnalysis ?? undefined}
-              resume={selectedResume}
-              analysisId={jobAnalysisId ?? undefined}
-            />
-          </div>
-
-          {/* Resume Versioning Manager */}
-          <div className="no-print">
-            <ResumeVersionManager
-              resumeId={selectedResume.id}
-              processingStatus={selectedResume.processingStatus}
-            />
-          </div>
+          <CakeMeReport
+            analysis={jobMatchAnalysis ?? undefined}
+            resume={selectedResume}
+            analysisId={jobAnalysisId ?? undefined}
+            onDownloadReportPdf={handleDownloadReportPdf}
+            onGenerateCoverLetter={handleGenerateCoverLetter}
+            isGeneratingCoverLetter={isGeneratingCoverLetter}
+          />
         </div>
       ) : null}
     </div>

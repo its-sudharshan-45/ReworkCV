@@ -1,16 +1,14 @@
 export const AUTH_ROUTES = {
   login: '/login',
   signup: '/signup',
-  dashboard: '/dashboard',
-  profile: '/profile',
+  dashboard: '/analysis',
+  profile: '/settings',
 } as const;
 
 export const PROTECTED_ROUTE_PREFIXES = [
-  '/dashboard',
-  '/profile',
-  '/resume',
-  '/saved',
-  '/notifications',
+  '/analysis',
+  '/history',
+  '/cover-letters',
   '/settings',
 ] as const;
 

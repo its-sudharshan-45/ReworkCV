@@ -1,4 +1,3 @@
-
 import type { ResumeListItem } from '@/features/resume/types/resume';
 import { ResumeCard } from '@/features/resume/components/ResumeCard';
 
@@ -19,7 +18,7 @@ export function ResumeList({
 }: ResumeListProps) {
   if (resumes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed bg-card p-6 text-sm text-muted-foreground">
+      <div className="bg-card text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
         No resumes uploaded yet. Upload a PDF or text resume to get started.
       </div>
     );

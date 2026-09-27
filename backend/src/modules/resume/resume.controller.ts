@@ -3,7 +3,7 @@ import { AppError } from '../../utils/errors.js';
 import { getRouteParam } from '../../utils/route-params.js';
 import { resumeService } from './resume.service.js';
 import { resumeJobAnalysisService } from './resume-job-analysis.service.js';
-import { resumeOptimizationService } from './resume-optimization.service.js';
+import { resumeReportExportService } from './resume-report-export.service.js';
 
 export async function uploadResume(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -89,15 +89,24 @@ export async function getLatestJobAnalysis(req: Request, res: Response): Promise
   res.status(200).json({ analysis });
 }
 
-export async function optimizeResume(req: Request, res: Response): Promise<void> {
+export async function exportReportPdf(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     throw new AppError('Authentication required', 401, 'AUTHENTICATION_ERROR');
   }
 
   const resumeId = getRouteParam(req.params, 'id');
-  const { analysisId } = req.body as { analysisId: string };
+  const resumeDetail = await resumeService.getResume(req.user.id, resumeId);
+  const latestAnalysis = await resumeJobAnalysisService.getLatestJobAnalysis(req.user.id, resumeId);
 
-  const result = await resumeOptimizationService.optimizeResume(req.user.id, resumeId, analysisId);
+  const buffer = await resumeReportExportService.generateReportPdf(
+    resumeDetail,
+    latestAnalysis?.data,
+  );
 
-  res.status(200).json({ success: true, data: result });
+  const safeFilename = `${resumeDetail.originalFilename.replace(/\.[^/.]+$/, '')}_Analysis_Report.pdf`;
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.status(200).send(buffer);
 }

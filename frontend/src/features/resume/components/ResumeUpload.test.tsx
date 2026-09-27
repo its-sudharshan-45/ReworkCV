@@ -22,7 +22,9 @@ describe('ResumeUpload', () => {
     const file = new File(['content'], 'resume.png', { type: 'image/png' });
     fireEvent.change(input, { target: { files: [file] } });
 
-    expect(await screen.findByText(/Only PDF, DOC, DOCX, and plain text resumes are supported/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/Only PDF, DOC, DOCX, and plain text resumes are supported/i),
+    ).toBeTruthy();
   });
 
   it('uploads a valid resume file and job description', async () => {
@@ -97,7 +99,9 @@ describe('ResumeUpload', () => {
 
     const jdTextarea = screen.getByPlaceholderText(/Paste the full job description here/i);
     fireEvent.change(jdTextarea, {
-      target: { value: 'Seeking a Full Stack Engineer with strong TypeScript and Node.js expertise.' },
+      target: {
+        value: 'Seeking a Full Stack Engineer with strong TypeScript and Node.js expertise.',
+      },
     });
 
     const button = screen.getByRole('button', { name: /scan & tailor resume fit/i });

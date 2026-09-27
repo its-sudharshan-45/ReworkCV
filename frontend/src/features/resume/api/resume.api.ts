@@ -1,8 +1,9 @@
 import { authenticatedApiFetch } from '@/lib/api/client';
+import { clientEnv } from '@/lib/env';
+import { createClient } from '@/lib/supabase/client';
 import type {
   AnalyzeJobResponse,
   JobAnalysisListResponse,
-  OptimizeResumeResponse,
   ResumeDetailResponse,
   ResumeListResponse,
 } from '@/features/resume/types/resume';
@@ -61,9 +62,36 @@ export async function getLatestJobAnalysis(resumeId: string) {
   );
 }
 
-export async function optimizeResume(resumeId: string, analysisId: string) {
-  return authenticatedApiFetch<OptimizeResumeResponse>(`/resumes/${resumeId}/optimize`, {
-    method: 'POST',
-    body: JSON.stringify({ analysisId }),
+export async function downloadResumeReportPdf(resumeId: string, fallbackName = 'Analysis_Report.pdf') {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const response = await fetch(`${clientEnv.VITE_API_URL}/resumes/${resumeId}/report/pdf`, {
+    headers: {
+      Authorization: `Bearer ${session?.access_token || ''}`,
+    },
   });
+
+  if (!response.ok) {
+    throw new Error('Failed to download report PDF');
+  }
+
+  const disposition = response.headers.get('content-disposition');
+  let filename = fallbackName;
+  if (disposition) {
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    if (match?.[1]) filename = match[1].trim();
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 150);
 }
