@@ -49,12 +49,10 @@ export function Sidebar({ isCollapsed, onToggleCollapse, onMobileClose }: Sideba
           onClick={onMobileClose}
           className="flex items-center gap-2.5 overflow-hidden"
         >
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#114B3E] text-white shadow-md shadow-emerald-900/20 flex-shrink-0">
-            <span className="font-black text-sm tracking-tight">R</span>
-          </div>
+          <img src="/logo.png" alt="ReworkCV Logo" className="w-8 h-8 object-contain flex-shrink-0" />
           {!isCollapsed && (
             <span className="font-extrabold text-lg text-slate-900 dark:text-slate-100 tracking-tight leading-none">
-              Rework CV
+              Rework<span className="text-[#7C3AED]">CV</span>
             </span>
           )}
         </Link>

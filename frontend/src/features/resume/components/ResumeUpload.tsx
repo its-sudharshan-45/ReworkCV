@@ -29,6 +29,10 @@ interface ResumeUploadProps {
   isProcessing: boolean;
   savedResumes?: ResumeListItem[];
   onSelectSavedResume?: (resumeId: string) => void;
+  /** Callback to delete a saved resume */
+  onDelete?: (resumeId: string) => void;
+  /** Compact mode — used inside the two-column hero layout */
+  compact?: boolean;
 }
 
 export function ResumeUpload({
@@ -38,6 +42,8 @@ export function ResumeUpload({
   isProcessing,
   savedResumes = [],
   onSelectSavedResume,
+  onDelete,
+  compact = false,
 }: ResumeUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const jdFileInputRef = useRef<HTMLInputElement>(null);
@@ -164,24 +170,13 @@ export function ResumeUpload({
   }
 
   return (
-    <div className="space-y-8 rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm sm:p-10 dark:border-slate-800 dark:bg-slate-900">
-      {/* Header matching user image */}
-      <div className="space-y-2 text-left">
-        <h1 className="text-2xl font-extrabold tracking-tight text-[#114B3E] sm:text-3xl lg:text-4xl dark:text-emerald-400">
-          Secure Your Interview Chances With a Tailored Resume
-        </h1>
-        <p className="text-sm font-normal text-slate-600 sm:text-base dark:text-slate-400">
-          Turn applications into interviews with personalized suggestions, ATS scoring and matching
-          cover letters.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Step 1: Upload Your Resume* */}
+    <div className={compact ? 'w-full space-y-6' : 'space-y-6 rounded-2xl bg-white p-5 sm:p-7 border border-slate-200/90 shadow-sm'}>
+      {/* Step 1: Upload Your Resume* */}
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800 sm:text-lg dark:text-slate-200">
-              <span className="text-lg font-extrabold text-[#114B3E] dark:text-emerald-400">①</span>
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800">
+              <span className="text-lg font-extrabold text-[#7C3AED]">①</span>
               <span>Upload Your Resume</span>
               <span className="text-red-500">*</span>
             </h2>
@@ -192,10 +187,10 @@ export function ResumeUpload({
             <button
               type="button"
               onClick={() => setResumeMode('upload')}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 resumeMode === 'upload'
-                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                  ? 'border border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] shadow-sm'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <FileUp className="h-3.5 w-3.5" />
@@ -205,23 +200,23 @@ export function ResumeUpload({
             <button
               type="button"
               onClick={() => setResumeMode('saved')}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 resumeMode === 'saved'
-                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                  ? 'border border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] shadow-sm'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <FileText className="h-3.5 w-3.5" />
-              <span>Use Saved Resume</span>
+              <span>Saved Resume</span>
             </button>
 
             <button
               type="button"
               onClick={() => setResumeMode('paste')}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 resumeMode === 'paste'
-                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                  ? 'border border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] shadow-sm'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <Type className="h-3.5 w-3.5" />
@@ -237,12 +232,12 @@ export function ResumeUpload({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => !isBusy && inputRef.current?.click()}
-                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 transition-all duration-200 sm:p-10 ${
+                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-7 transition-all duration-200 ${
                   isDragOver
-                    ? 'scale-[0.99] border-[#007A5A] bg-[#007A5A]/10'
+                    ? 'scale-[0.99] border-[#7C3AED] bg-[#F3E8FF]'
                     : selectedFile
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                      : 'border-slate-300 bg-[#F7FAF8] hover:border-[#007A5A] dark:border-slate-700 dark:bg-slate-800/40'
+                      ? 'border-emerald-400 bg-emerald-50/50'
+                      : 'border-[#C084FC]/70 bg-[#FAF5FF] hover:border-[#7C3AED] hover:bg-[#F3E8FF]/60'
                 } ${isBusy ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 <input
@@ -259,10 +254,10 @@ export function ResumeUpload({
 
                 {!selectedFile ? (
                   <div className="flex flex-col items-center space-y-1.5 text-center">
-                    <span className="text-sm font-bold text-[#007A5A] hover:underline sm:text-base dark:text-emerald-400">
+                    <span className="text-[14.5px] font-semibold text-[#7C3AED] hover:underline">
                       Upload new files
                     </span>
-                    <p className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+                    <p className="text-xs text-slate-500">
                       Drop files here or click to upload.
                     </p>
                   </div>
@@ -322,8 +317,8 @@ export function ResumeUpload({
 
           {/* Tab 2: Use Saved Resume */}
           {resumeMode === 'saved' && (
-            <div className="space-y-3 rounded-2xl border border-slate-200 bg-[#F7FAF8] p-5 dark:border-slate-800 dark:bg-slate-800/40">
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <div className="space-y-3 rounded-xl border border-[#EDE4FF] bg-[#FAF5FF] p-4">
+              <p className="text-xs font-semibold text-slate-700">
                 Select an existing resume from your account:
               </p>
               {savedResumes.length > 0 ? (
@@ -331,10 +326,10 @@ export function ResumeUpload({
                   {savedResumes.map((res) => (
                     <label
                       key={res.id}
-                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3.5 transition-all ${
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all ${
                         selectedSavedId === res.id
-                          ? 'border-[#007A5A] bg-[#007A5A]/10 font-bold text-slate-900 dark:text-slate-100'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+                          ? 'border-[#7C3AED] bg-[#F3E8FF] font-bold text-slate-900'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-[#C084FC]/50'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -382,8 +377,8 @@ export function ResumeUpload({
         {/* Step 2: Add a Job Description* */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800 sm:text-lg dark:text-slate-200">
-              <span className="text-lg font-extrabold text-[#114B3E] dark:text-emerald-400">②</span>
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800">
+              <span className="text-lg font-extrabold text-[#7C3AED]">②</span>
               <span>Add a Job Description</span>
               <span className="text-red-500">*</span>
             </h2>
@@ -394,10 +389,10 @@ export function ResumeUpload({
             <button
               type="button"
               onClick={() => setJdMode('paste')}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 jdMode === 'paste'
-                  ? 'shadow-xs border-2 border-[#007A5A] bg-[#007A5A]/5 font-bold text-[#007A5A] dark:bg-[#007A5A]/15'
-                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
+                  ? 'border border-[#7C3AED] bg-[#F3E8FF] text-[#7C3AED] shadow-sm'
+                  : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <Type className="h-3.5 w-3.5" />
@@ -407,7 +402,7 @@ export function ResumeUpload({
             <button
               type="button"
               onClick={() => jdFileInputRef.current?.click()}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800`}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 px-4 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
             >
               <FileUp className="h-3.5 w-3.5" />
               <span>Upload File</span>
@@ -423,10 +418,7 @@ export function ResumeUpload({
 
           {/* Optional Job Title */}
           <div className="space-y-1">
-            <label
-              htmlFor="job-title-input"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
-            >
+            <label htmlFor="job-title-input" className="block text-xs font-semibold text-slate-700">
               Job Title <span className="font-normal text-slate-400">(Optional)</span>
             </label>
             <input
@@ -434,9 +426,9 @@ export function ResumeUpload({
               type="text"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              placeholder="e.g. Senior Frontend Engineer"
+              placeholder="e.g. Backend Engineer / Google"
               disabled={isBusy}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 transition-all focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 transition-all focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
             />
           </div>
 
@@ -448,19 +440,15 @@ export function ResumeUpload({
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
               placeholder="Paste the full job description here. The more details you provide, the better we can check your resume's fit."
-              rows={6}
+              rows={5}
               disabled={isBusy}
-              className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-xs text-slate-900 placeholder-slate-400 transition-all focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-xl border border-slate-300 bg-white p-3.5 text-[13.5px] text-slate-700 placeholder-slate-400 transition-all focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 resize-y"
             />
             <div className="flex items-center justify-between text-[11px] text-slate-400">
               <span>
-                {charCount >= minChars
-                  ? '✓ Job description provided'
-                  : `Minimum ${minChars} characters`}
+                {charCount >= minChars ? '✓ Job description provided' : `Minimum ${minChars} characters`}
               </span>
-              <span>
-                {charCount.toLocaleString()} / {maxChars.toLocaleString()}
-              </span>
+              <span>{charCount.toLocaleString()} / {maxChars.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -469,22 +457,26 @@ export function ResumeUpload({
         {error && <FormMessage message={error} />}
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div className="flex justify-end">
           <Button
             type="submit"
+            id="analyze-resume-btn"
             disabled={isBusy}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#007A5A] py-4 text-sm font-bold text-white shadow-md shadow-[#007A5A]/20 transition-all hover:bg-[#006349] sm:py-5 sm:text-base"
+            className="px-7 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-60 disabled:scale-100"
+            style={{
+              background: isBusy
+                ? '#9CA3AF'
+                : 'linear-gradient(135deg, rgb(124, 58, 237) 0%, rgb(236, 72, 153) 100%)',
+              boxShadow: isBusy ? 'none' : 'rgba(124, 58, 237, 0.4) 0px 10px 25px -5px',
+            }}
           >
             {isBusy ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Running AI ATS Match Analysis…</span>
+                <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                <span>Analyzing…</span>
               </>
             ) : (
-              <>
-                <Sparkles className="h-5 w-5 text-emerald-200" />
-                <span>Scan & Tailor Resume Fit</span>
-              </>
+              <span>Analyze My Resume</span>
             )}
           </Button>
         </div>

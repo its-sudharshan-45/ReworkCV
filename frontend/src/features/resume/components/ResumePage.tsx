@@ -13,16 +13,17 @@ import {
   downloadResumeReportPdf,
 } from '@/features/resume/api/resume.api';
 import { generateCoverLetter } from '@/features/cover-letter/api/cover-letter.api';
-import { ResumeList } from '@/features/resume/components/ResumeList';
 import { ResumeUpload } from '@/features/resume/components/ResumeUpload';
-import { CakeMeReport } from '@/features/resume/components/CakeMeReport';
+import { AnalysisPreviewPanel } from '@/features/resume/components/AnalysisPreviewPanel';
 import type {
   JobMatchAnalysis,
   ResumeDetail,
   ResumeListItem,
 } from '@/features/resume/types/resume';
 import { ApiClientError } from '@/lib/api/client';
-import { FileText, Sparkles, CheckCircle2, History } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { StitchNavbar } from '@/features/resume/components/StitchNavbar';
+import { ScanHistoryDrawer } from '@/features/resume/components/ScanHistoryDrawer';
 
 export function ResumePage() {
   const [searchParams] = useSearchParams();
@@ -39,13 +40,11 @@ export function ResumePage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Job Match analysis result state
   const [jobMatchAnalysis, setJobMatchAnalysis] = useState<JobMatchAnalysis | null>(null);
   const [jobAnalysisId, setJobAnalysisId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState<boolean>(false);
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
 
-  // Keep target JD across operations for seamless cover letter generation
   const [lastJdText, setLastJdText] = useState<string>('');
   const [lastJobTitle, setLastJobTitle] = useState<string>('');
 
@@ -61,10 +60,7 @@ export function ResumePage() {
             try {
               const analysesData = await listJobAnalyses(res.id);
               if (analysesData.analyses && analysesData.analyses.length > 0) {
-                return {
-                  ...res,
-                  score: analysesData.analyses[0].matchScore,
-                };
+                return { ...res, score: analysesData.analyses[0].matchScore };
               }
             } catch {
               // keep existing score
@@ -123,11 +119,7 @@ export function ResumePage() {
         setJobMatchAnalysis(null);
       }
 
-      setSelectedResume({
-        ...data.resume,
-        score: matchScore,
-      });
-
+      setSelectedResume({ ...data.resume, score: matchScore });
       setShowReport(true);
     } catch (selectError) {
       setSelectedResume(null);
@@ -141,7 +133,6 @@ export function ResumePage() {
     }
   }
 
-  // Unified Resume Upload + Job Description Analysis flow
   async function handleUploadAndAnalyze(file: File, jobDescription: string, jobTitle?: string) {
     setIsUploading(true);
     setIsProcessing(false);
@@ -154,35 +145,24 @@ export function ResumePage() {
     setLastJobTitle(jobTitle || '');
 
     try {
-      // 1. Upload resume
       const data = await uploadResume(file);
       setSelectedResumeId(data.resume.id);
       setSelectedResume(data.resume);
 
-      // 2. Process through NER extraction
       setIsProcessing(true);
       const processed = await processResume(data.resume.id);
       setSelectedResume(processed.resume);
 
-      // 3. Run Job-Specific ATS match analysis
       const jobMatchRes = await analyzeResumeForJob(processed.resume.id, jobDescription, jobTitle);
-
       const matchedScore = jobMatchRes.data.matchScore;
       setJobMatchAnalysis(jobMatchRes.data);
       setJobAnalysisId(jobMatchRes.analysisId);
 
-      const updatedResume = {
-        ...processed.resume,
-        score: matchedScore,
-      };
+      const updatedResume = { ...processed.resume, score: matchedScore };
       setSelectedResume(updatedResume);
 
       setResumes((current) => [
-        {
-          ...data.resume,
-          processingStatus: 'PROCESSED',
-          score: matchedScore,
-        },
+        { ...data.resume, processingStatus: 'PROCESSED', score: matchedScore },
         ...current.filter((r) => r.id !== data.resume.id),
       ]);
 
@@ -200,7 +180,6 @@ export function ResumePage() {
     }
   }
 
-  // Analyze an existing uploaded resume against a new job description
   async function handleAnalyzeSavedResume(
     resumeId: string,
     jobDescription: string,
@@ -221,14 +200,10 @@ export function ResumePage() {
 
       setJobMatchAnalysis(jobMatchRes.data);
       setJobAnalysisId(jobMatchRes.analysisId);
-
       setSelectedResumeId(resumeId);
-      const detailRes = await getResume(resumeId);
-      setSelectedResume({
-        ...detailRes.resume,
-        score: matchedScore,
-      });
 
+      const detailRes = await getResume(resumeId);
+      setSelectedResume({ ...detailRes.resume, score: matchedScore });
       setResumes((current) =>
         current.map((r) => (r.id === resumeId ? { ...r, score: matchedScore } : r)),
       );
@@ -248,7 +223,6 @@ export function ResumePage() {
 
   async function handleDelete(resumeId: string) {
     if (!confirm('Are you sure you want to delete this resume?')) return;
-
     setDeletingResumeId(resumeId);
     setError(null);
 
@@ -273,13 +247,12 @@ export function ResumePage() {
           : 'Unable to delete resume. Please try again.',
       );
     } finally {
-      setDeletingIdNull();
+      setDeletingResumeId(null);
     }
   }
 
-  function setDeletingIdNull() {
-    setDeletingResumeId(null);
-  }
+  // Suppress unused warning â€” deletingResumeId drives loading UI inside ResumeList
+  void deletingResumeId;
 
   async function handleDownloadReportPdf() {
     if (!selectedResume) return;
@@ -310,97 +283,95 @@ export function ResumePage() {
     }
   }
 
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+
+  function handleNewScan() {
+    setShowReport(false);
+    setJobMatchAnalysis(null);
+    setSelectedResume(null);
+    setSelectedResumeId(null);
+    setSuccessMessage(null);
+    setError(null);
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center dark:border-slate-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 items-center rounded-full bg-[#16A36A]/10 px-2.5 text-[11px] font-bold text-[#16A36A] dark:bg-[#16A36A]/20">
-              AI Resume Intelligence
-            </span>
-          </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
-            Resume Analysis &amp; Job Match
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Upload your resume and paste a target job description to get an instant ATS score, deep skill gap analysis, and tailored AI cover letter.
-          </p>
+    <div
+      className="min-h-screen w-full relative flex flex-col font-sans"
+      style={{
+        background:
+          'radial-gradient(circle at 85% 10%, rgba(124, 58, 237, 0.05) 0%, rgba(250, 252, 250, 0) 60%), #FAFCFA',
+      }}
+    >
+      {/* Stitch Top Bar */}
+      <StitchNavbar onOpenHistory={() => setIsHistoryDrawerOpen(true)} />
+
+      {/* Scan History Slide-over Drawer */}
+      <ScanHistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        resumes={resumes}
+        selectedResumeId={selectedResumeId}
+        onSelectResume={(id) => void handleSelect(id)}
+        onDeleteResume={(id) => void handleDelete(id)}
+        deletingId={deletingResumeId}
+      />
+
+      {/* Main Two-Column Canvas */}
+      <main className="flex-1 w-full max-w-[1580px] mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-14 items-start">
+          {/* LEFT: Upload Form Column */}
+          <section className="lg:col-span-5 flex flex-col">
+            {/* Headline */}
+            <h1
+              className="text-3xl sm:text-4xl xl:text-[42px] font-extrabold text-[#1E1235] tracking-tight leading-[1.15] mb-3"
+              style={{ fontFamily: 'Outfit, Inter, sans-serif' }}
+            >
+              Stand Out Before<br />You Even Walk In
+            </h1>
+            <p className="text-[14.5px] text-slate-500 leading-relaxed mb-6 max-w-md">
+              ReworkCV tailors your resume to every role, scores it against ATS filters, and writes
+              a cover letter that matches — so you apply with confidence.
+            </p>
+
+            {/* Alerts */}
+            {error && <FormMessage message={error} />}
+            {successMessage && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+            {isLoading && !resumes.length && (
+              <div className="mb-4 text-xs text-slate-400 animate-pulse">Loading your resumes…</div>
+            )}
+
+            {/* Upload form */}
+            <ResumeUpload
+              onUploadAndAnalyze={handleUploadAndAnalyze}
+              onAnalyzeSavedResume={handleAnalyzeSavedResume}
+              isUploading={isUploading}
+              isProcessing={isProcessing}
+              savedResumes={resumes}
+              onSelectSavedResume={(id) => void handleSelect(id)}
+              onDelete={(id) => void handleDelete(id)}
+              compact
+            />
+          </section>
+
+          {/* RIGHT: Analysis Preview Panel Column */}
+          <section className="lg:col-span-7 flex flex-col">
+            <AnalysisPreviewPanel
+              analysis={showReport ? jobMatchAnalysis : null}
+              resume={showReport ? selectedResume : null}
+              analysisId={jobAnalysisId}
+              isGeneratingCoverLetter={isGeneratingCoverLetter}
+              onDownloadReportPdf={handleDownloadReportPdf}
+              onGenerateCoverLetter={handleGenerateCoverLetter}
+              onNewScan={handleNewScan}
+            />
+          </section>
         </div>
-      </div>
-
-      {/* Global Alerts */}
-      {error && <FormMessage message={error} />}
-      {successMessage && (
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-50/80 p-4 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
-          <span>{successMessage}</span>
-        </div>
-      )}
-
-      {/* Unified Resume Upload & Job Description Form */}
-      <div className="space-y-4">
-        <ResumeUpload
-          onUploadAndAnalyze={handleUploadAndAnalyze}
-          onAnalyzeSavedResume={handleAnalyzeSavedResume}
-          isUploading={isUploading}
-          isProcessing={isProcessing}
-          savedResumes={resumes}
-          onSelectSavedResume={(id) => void handleSelect(id)}
-        />
-      </div>
-
-      {/* Previously Analyzed Resumes */}
-      {resumes.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-              <History className="h-3.5 w-3.5" />
-              Analyzed Resumes ({resumes.length})
-            </h2>
-          </div>
-          <ResumeList
-            resumes={resumes}
-            selectedResumeId={selectedResumeId}
-            onSelect={(id: string) => void handleSelect(id)}
-            onDelete={(id: string) => void handleDelete(id)}
-            deletingResumeId={deletingResumeId}
-          />
-        </div>
-      )}
-
-      {/* Professional Resume Analysis Report */}
-      {selectedResume && showReport ? (
-        <div
-          id="analysis-report-section"
-          className="animate-in fade-in space-y-6 border-t border-slate-200 pt-6 duration-300 dark:border-slate-800"
-        >
-          <div className="no-print flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
-                <FileText className="h-5 w-5 text-[#16A36A]" />
-                Analysis Report: {selectedResume.originalFilename}
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Full ATS readiness audit, requirement coverage, and gap breakdown.
-              </p>
-            </div>
-          </div>
-
-          {selectedResume.failureReason ? (
-            <FormMessage message={selectedResume.failureReason} />
-          ) : null}
-
-          <CakeMeReport
-            analysis={jobMatchAnalysis ?? undefined}
-            resume={selectedResume}
-            analysisId={jobAnalysisId ?? undefined}
-            onDownloadReportPdf={handleDownloadReportPdf}
-            onGenerateCoverLetter={handleGenerateCoverLetter}
-            isGeneratingCoverLetter={isGeneratingCoverLetter}
-          />
-        </div>
-      ) : null}
+      </main>
     </div>
   );
 }
