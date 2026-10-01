@@ -193,6 +193,41 @@ export interface JobMatchRecommendation {
   impact: string;
 }
 
+export interface AiInsightStrength {
+  title: string;
+  explanation: string;
+  evidence: string;
+}
+
+export interface AiInsightWeakness {
+  title: string;
+  explanation: string;
+  evidence: string;
+}
+
+export interface AiInsightRecommendation {
+  priority: 'high' | 'medium' | 'low';
+  area: string;
+  recommendation: string;
+  reason: string;
+}
+
+export interface AiBulletAnalysis {
+  original: string;
+  issue: string;
+  suggestion: string;
+}
+
+export interface AiInsights {
+  summary: string;
+  strengths: AiInsightStrength[];
+  weaknesses: AiInsightWeakness[];
+  recommendations: AiInsightRecommendation[];
+  bulletAnalysis: AiBulletAnalysis[];
+  ragUsed: boolean;
+  ragNote?: string;
+}
+
 export interface JobMatchAnalysis {
   matchScore: number;
   category: MatchCategory;
@@ -209,6 +244,8 @@ export interface JobMatchAnalysis {
   projectDetail: ProjectMatchDetail;
   strengths: string[];
   recommendations: JobMatchRecommendation[];
+  /** RAG/AI insights (optional; deterministic scores stay authoritative). */
+  aiInsights?: AiInsights;
 }
 
 export interface JobAnalysisListItem {
@@ -224,6 +261,16 @@ export interface AnalyzeJobResponse {
   success: boolean;
   data: JobMatchAnalysis;
   analysisId: string;
+}
+
+export interface JobAnalysisDetail {
+  success: boolean;
+  data: JobMatchAnalysis;
+  analysisId: string;
+  resumeId: string;
+  jobTitle: string | null;
+  jobDescription: string;
+  createdAt: string;
 }
 
 export interface JobAnalysisListResponse {

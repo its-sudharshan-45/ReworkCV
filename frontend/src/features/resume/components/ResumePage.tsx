@@ -1,173 +1,110 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormMessage } from '@/components/ui/form-message';
 import {
   analyzeResumeForJob,
   deleteResume,
-  getLatestJobAnalysis,
-  getResume,
   listJobAnalyses,
   listResumes,
   processResume,
   uploadResume,
-  downloadResumeReportPdf,
 } from '@/features/resume/api/resume.api';
-import { generateCoverLetter } from '@/features/cover-letter/api/cover-letter.api';
 import { ResumeUpload } from '@/features/resume/components/ResumeUpload';
-import { AnalysisPreviewPanel } from '@/features/resume/components/AnalysisPreviewPanel';
-import type {
-  JobMatchAnalysis,
-  ResumeDetail,
-  ResumeListItem,
-} from '@/features/resume/types/resume';
+import { AnalysisLoadingState } from '@/features/resume/components/AnalysisLoadingState';
+import { DummyReportPreview } from '@/features/resume/components/DummyReportPreview';
+import type { ResumeListItem } from '@/features/resume/types/resume';
 import { ApiClientError } from '@/lib/api/client';
-import { CheckCircle2 } from 'lucide-react';
 import { StitchNavbar } from '@/features/resume/components/StitchNavbar';
 import { ScanHistoryDrawer } from '@/features/resume/components/ScanHistoryDrawer';
 
 export function ResumePage() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const queryResumeId = searchParams.get('resumeId');
 
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
-  const [selectedResume, setSelectedResume] = useState<ResumeDetail | null>(null);
-  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [deletingResumeId, setDeletingResumeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const [jobMatchAnalysis, setJobMatchAnalysis] = useState<JobMatchAnalysis | null>(null);
-  const [jobAnalysisId, setJobAnalysisId] = useState<string | null>(null);
-  const [showReport, setShowReport] = useState<boolean>(false);
-  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
-
-  const [lastJdText, setLastJdText] = useState<string>('');
   const [lastJobTitle, setLastJobTitle] = useState<string>('');
+  const [analysisPhase, setAnalysisPhase] = useState<'uploading' | 'processing' | 'analyzing' | null>(null);
+  const analysisInFlight = useRef(false);
+  const lastRequest = useRef<
+    | { kind: 'upload'; file: File; jobDescription: string; jobTitle?: string }
+    | { kind: 'saved'; resumeId: string; jobDescription: string; jobTitle?: string }
+    | null
+  >(null);
 
-  const loadResumes = useCallback(
-    async (autoSelect = false) => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await listResumes();
-        const enrichedResumes = await Promise.all(
-          (data.resumes || []).map(async (res) => {
-            try {
-              const analysesData = await listJobAnalyses(res.id);
-              if (analysesData.analyses && analysesData.analyses.length > 0) {
-                return { ...res, score: analysesData.analyses[0].matchScore };
-              }
-            } catch {
-              // keep existing score
-            }
-            return res;
-          }),
-        );
-        setResumes(enrichedResumes);
-
-        if (enrichedResumes.length > 0) {
-          if (queryResumeId && enrichedResumes.some((r) => r.id === queryResumeId)) {
-            void handleSelect(queryResumeId);
-          } else if (autoSelect || !selectedResumeId) {
-            void handleSelect(enrichedResumes[0].id);
-          }
-        }
-      } catch (loadError) {
-        setError(
-          loadError instanceof ApiClientError
-            ? loadError.message
-            : 'Unable to load resumes. Please verify you are logged in and try again.',
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [selectedResumeId, queryResumeId],
-  );
-
-  useEffect(() => {
-    void loadResumes(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function handleSelect(resumeId: string) {
-    setSelectedResumeId(resumeId);
+  const loadResumes = useCallback(async () => {
+    setIsLoading(true);
     setError(null);
-    setJobMatchAnalysis(null);
-    setJobAnalysisId(null);
 
     try {
-      const data = await getResume(resumeId);
-      let matchScore = data.resume.score;
-
-      try {
-        const latestData = await getLatestJobAnalysis(resumeId);
-        if (latestData?.analysis?.data) {
-          setJobMatchAnalysis(latestData.analysis.data);
-          setJobAnalysisId(latestData.analysis.analysisId);
-          matchScore = latestData.analysis.data.matchScore;
-          setResumes((current) =>
-            current.map((r) => (r.id === resumeId ? { ...r, score: matchScore } : r)),
-          );
-        }
-      } catch {
-        setJobMatchAnalysis(null);
-      }
-
-      setSelectedResume({ ...data.resume, score: matchScore });
-      setShowReport(true);
-    } catch (selectError) {
-      setSelectedResume(null);
-      setShowReport(false);
-      setJobMatchAnalysis(null);
-      setError(
-        selectError instanceof ApiClientError
-          ? selectError.message
-          : 'Unable to load resume details.',
+      const data = await listResumes();
+      const enrichedResumes = await Promise.all(
+        (data.resumes || []).map(async (res) => {
+          try {
+            const analysesData = await listJobAnalyses(res.id);
+            if (analysesData.analyses && analysesData.analyses.length > 0) {
+              return { ...res, score: analysesData.analyses[0].matchScore };
+            }
+          } catch {
+            // keep existing score
+          }
+          return res;
+        }),
       );
+      setResumes(enrichedResumes);
+    } catch (loadError) {
+      setError(
+        loadError instanceof ApiClientError
+          ? loadError.message
+          : 'Unable to load resumes. Please verify you are logged in and try again.',
+      );
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void loadResumes();
+  }, [loadResumes]);
+
+  function handleSelect(resumeId: string) {
+    navigate(`/resume/report/${resumeId}/latest`);
   }
 
   async function handleUploadAndAnalyze(file: File, jobDescription: string, jobTitle?: string) {
+    // Prevent duplicate Analyze requests while analysis is running.
+    if (analysisInFlight.current) return;
+    analysisInFlight.current = true;
+    lastRequest.current = { kind: 'upload', file, jobDescription, jobTitle };
     setIsUploading(true);
     setIsProcessing(false);
+    setAnalysisPhase('uploading');
     setError(null);
-    setSuccessMessage(null);
-    setShowReport(false);
-    setJobMatchAnalysis(null);
-    setJobAnalysisId(null);
-    setLastJdText(jobDescription);
     setLastJobTitle(jobTitle || '');
 
     try {
       const data = await uploadResume(file);
-      setSelectedResumeId(data.resume.id);
-      setSelectedResume(data.resume);
 
+      setIsUploading(false);
       setIsProcessing(true);
+      setAnalysisPhase('processing');
       const processed = await processResume(data.resume.id);
-      setSelectedResume(processed.resume);
 
+      setAnalysisPhase('analyzing');
       const jobMatchRes = await analyzeResumeForJob(processed.resume.id, jobDescription, jobTitle);
       const matchedScore = jobMatchRes.data.matchScore;
-      setJobMatchAnalysis(jobMatchRes.data);
-      setJobAnalysisId(jobMatchRes.analysisId);
-
-      const updatedResume = { ...processed.resume, score: matchedScore };
-      setSelectedResume(updatedResume);
 
       setResumes((current) => [
         { ...data.resume, processingStatus: 'PROCESSED', score: matchedScore },
         ...current.filter((r) => r.id !== data.resume.id),
       ]);
 
-      setShowReport(true);
-      setSuccessMessage('Resume & Job Description successfully analyzed!');
+      // Analysis complete — navigate to the dedicated report page.
+      navigate(`/resume/report/${processed.resume.id}/${jobMatchRes.analysisId}`);
     } catch (uploadError) {
       setError(
         uploadError instanceof ApiClientError
@@ -177,6 +114,8 @@ export function ResumePage() {
     } finally {
       setIsUploading(false);
       setIsProcessing(false);
+      setAnalysisPhase(null);
+      analysisInFlight.current = false;
     }
   }
 
@@ -185,31 +124,24 @@ export function ResumePage() {
     jobDescription: string,
     jobTitle?: string,
   ) {
+    if (analysisInFlight.current) return;
+    analysisInFlight.current = true;
+    lastRequest.current = { kind: 'saved', resumeId, jobDescription, jobTitle };
     setIsProcessing(true);
+    setAnalysisPhase('analyzing');
     setError(null);
-    setSuccessMessage(null);
-    setShowReport(false);
-    setJobMatchAnalysis(null);
-    setJobAnalysisId(null);
-    setLastJdText(jobDescription);
     setLastJobTitle(jobTitle || '');
 
     try {
       const jobMatchRes = await analyzeResumeForJob(resumeId, jobDescription, jobTitle);
       const matchedScore = jobMatchRes.data.matchScore;
 
-      setJobMatchAnalysis(jobMatchRes.data);
-      setJobAnalysisId(jobMatchRes.analysisId);
-      setSelectedResumeId(resumeId);
-
-      const detailRes = await getResume(resumeId);
-      setSelectedResume({ ...detailRes.resume, score: matchedScore });
       setResumes((current) =>
         current.map((r) => (r.id === resumeId ? { ...r, score: matchedScore } : r)),
       );
 
-      setShowReport(true);
-      setSuccessMessage('Job description match analysis completed!');
+      // Analysis complete — navigate to the dedicated report page.
+      navigate(`/resume/report/${resumeId}/${jobMatchRes.analysisId}`);
     } catch (analysisError) {
       setError(
         analysisError instanceof ApiClientError
@@ -218,6 +150,18 @@ export function ResumePage() {
       );
     } finally {
       setIsProcessing(false);
+      setAnalysisPhase(null);
+      analysisInFlight.current = false;
+    }
+  }
+
+  async function handleRetryAnalysis() {
+    const req = lastRequest.current;
+    if (!req || analysisInFlight.current) return;
+    if (req.kind === 'upload') {
+      await handleUploadAndAnalyze(req.file, req.jobDescription, req.jobTitle);
+    } else {
+      await handleAnalyzeSavedResume(req.resumeId, req.jobDescription, req.jobTitle);
     }
   }
 
@@ -228,18 +172,7 @@ export function ResumePage() {
 
     try {
       await deleteResume(resumeId);
-      const nextResumes = resumes.filter((r) => r.id !== resumeId);
-      setResumes(nextResumes);
-
-      if (selectedResumeId === resumeId) {
-        if (nextResumes.length > 0) {
-          void handleSelect(nextResumes[0].id);
-        } else {
-          setSelectedResumeId(null);
-          setSelectedResume(null);
-          setShowReport(false);
-        }
-      }
+      setResumes((current) => current.filter((r) => r.id !== resumeId));
     } catch (deleteError) {
       setError(
         deleteError instanceof ApiClientError
@@ -251,48 +184,8 @@ export function ResumePage() {
     }
   }
 
-  // Suppress unused warning â€” deletingResumeId drives loading UI inside ResumeList
-  void deletingResumeId;
-
-  async function handleDownloadReportPdf() {
-    if (!selectedResume) return;
-    try {
-      await downloadResumeReportPdf(selectedResume.id);
-    } catch {
-      setError('Failed to download report PDF. Please try again.');
-    }
-  }
-
-  async function handleGenerateCoverLetter() {
-    if (!selectedResume) return;
-    setIsGeneratingCoverLetter(true);
-    setError(null);
-    try {
-      const res = await generateCoverLetter({
-        resumeId: selectedResume.id,
-        jobAnalysisId: jobAnalysisId ?? undefined,
-        jobTitle: lastJobTitle || undefined,
-        jobDescription: lastJdText || 'Target Role Analysis',
-        tone: 'professional',
-      });
-      navigate(`/cover-letters?id=${res.coverLetter.id}`);
-    } catch {
-      setError('Failed to generate cover letter. Please try again.');
-    } finally {
-      setIsGeneratingCoverLetter(false);
-    }
-  }
-
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-
-  function handleNewScan() {
-    setShowReport(false);
-    setJobMatchAnalysis(null);
-    setSelectedResume(null);
-    setSelectedResumeId(null);
-    setSuccessMessage(null);
-    setError(null);
-  }
+  const isBusy = isUploading || isProcessing;
 
   return (
     <div
@@ -310,8 +203,11 @@ export function ResumePage() {
         isOpen={isHistoryDrawerOpen}
         onClose={() => setIsHistoryDrawerOpen(false)}
         resumes={resumes}
-        selectedResumeId={selectedResumeId}
-        onSelectResume={(id) => void handleSelect(id)}
+        selectedResumeId={null}
+        onSelectResume={(id) => {
+          setIsHistoryDrawerOpen(false);
+          handleSelect(id);
+        }}
         onDeleteResume={(id) => void handleDelete(id)}
         deletingId={deletingResumeId}
       />
@@ -334,11 +230,18 @@ export function ResumePage() {
             </p>
 
             {/* Alerts */}
-            {error && <FormMessage message={error} />}
-            {successMessage && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800">
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
-                <span>{successMessage}</span>
+            {error && (
+              <div className="mb-4 space-y-2">
+                <FormMessage message={error} />
+                {lastRequest.current && !isBusy && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryAnalysis()}
+                    className="cursor-pointer rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100"
+                  >
+                    Retry analysis
+                  </button>
+                )}
               </div>
             )}
             {isLoading && !resumes.length && (
@@ -352,23 +255,25 @@ export function ResumePage() {
               isUploading={isUploading}
               isProcessing={isProcessing}
               savedResumes={resumes}
-              onSelectSavedResume={(id) => void handleSelect(id)}
+              onSelectSavedResume={(id) => handleSelect(id)}
               onDelete={(id) => void handleDelete(id)}
               compact
             />
           </section>
 
-          {/* RIGHT: Analysis Preview Panel Column */}
+          {/* RIGHT: Real loading state while analysis runs, static dummy
+              preview otherwise. The dummy preview is display-only and is
+              never connected to real analysis data — the actual report lives
+              on the dedicated /resume/report/:resumeId/:analysisId route. */}
           <section className="lg:col-span-7 flex flex-col">
-            <AnalysisPreviewPanel
-              analysis={showReport ? jobMatchAnalysis : null}
-              resume={showReport ? selectedResume : null}
-              analysisId={jobAnalysisId}
-              isGeneratingCoverLetter={isGeneratingCoverLetter}
-              onDownloadReportPdf={handleDownloadReportPdf}
-              onGenerateCoverLetter={handleGenerateCoverLetter}
-              onNewScan={handleNewScan}
-            />
+            {isBusy ? (
+              <AnalysisLoadingState
+                phase={isUploading ? 'uploading' : analysisPhase === 'processing' ? 'processing' : 'analyzing'}
+                jobTitle={lastJobTitle}
+              />
+            ) : (
+              <DummyReportPreview />
+            )}
           </section>
         </div>
       </main>

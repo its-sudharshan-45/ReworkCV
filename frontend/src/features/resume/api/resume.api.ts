@@ -3,6 +3,7 @@ import { clientEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/client';
 import type {
   AnalyzeJobResponse,
+  JobAnalysisDetail,
   JobAnalysisListResponse,
   ResumeDetailResponse,
   ResumeListResponse,
@@ -59,6 +60,12 @@ export async function listJobAnalyses(resumeId: string) {
 export async function getLatestJobAnalysis(resumeId: string) {
   return authenticatedApiFetch<{ analysis: AnalyzeJobResponse | null }>(
     `/resumes/${resumeId}/job-analyses/latest`,
+  );
+}
+
+export async function getJobAnalysis(resumeId: string, analysisId: string) {
+  return authenticatedApiFetch<{ analysis: JobAnalysisDetail }>(
+    `/resumes/${resumeId}/job-analyses/${analysisId}`,
   );
 }
 

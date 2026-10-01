@@ -46,7 +46,7 @@ describe('ResumeUpload', () => {
       target: { value: 'Looking for a skilled developer with React and Node.js experience.' },
     });
 
-    const button = screen.getByRole('button', { name: /scan & tailor resume fit/i });
+    const button = screen.getByRole('button', { name: /analyze my resume/i });
     expect(button).not.toBeDisabled();
     fireEvent.click(button);
 
@@ -85,8 +85,8 @@ describe('ResumeUpload', () => {
       />,
     );
 
-    // Switch to "Use Saved Resume" tab
-    const savedTabButton = screen.getByRole('button', { name: /use saved resume/i });
+    // Switch to "Saved Resume" tab
+    const savedTabButton = screen.getByRole('button', { name: /saved resume/i });
     fireEvent.click(savedTabButton);
 
     // Select the saved resume radio button
@@ -94,7 +94,7 @@ describe('ResumeUpload', () => {
     fireEvent.click(radio);
 
     // Enter Job Title and Job Description
-    const titleInput = screen.getByPlaceholderText(/e\.g\. Senior Frontend Engineer/i);
+    const titleInput = screen.getByPlaceholderText(/e\.g\. Backend Engineer/i);
     fireEvent.change(titleInput, { target: { value: 'Full Stack Engineer' } });
 
     const jdTextarea = screen.getByPlaceholderText(/Paste the full job description here/i);
@@ -104,7 +104,7 @@ describe('ResumeUpload', () => {
       },
     });
 
-    const button = screen.getByRole('button', { name: /scan & tailor resume fit/i });
+    const button = screen.getByRole('button', { name: /analyze my resume/i });
     fireEvent.click(button);
 
     await waitFor(() => {

@@ -235,7 +235,7 @@ describe('CakeMeReport', () => {
     expect(screen.getByText('90%')).toBeDefined(); // Education score
   });
 
-  it('renders candidate contact info from structuredResume.personal', () => {
+  it('renders masked candidate contact info from structuredResume.personal', () => {
     const resumeWithPersonal = {
       ...mockResume,
       structuredData: {
@@ -258,8 +258,10 @@ describe('CakeMeReport', () => {
 
     render(<CakeMeReport analysis={mockAnalysis} resume={resumeWithPersonal as ResumeDetail} />);
     expect(screen.getByText('Alex Johnson')).toBeDefined();
-    expect(screen.getByText('alex.johnson@example.com')).toBeDefined();
-    expect(screen.getByText('555-0199')).toBeDefined();
+    // Contact details must be masked for privacy.
+    expect(screen.getByText('a••••@example.com')).toBeDefined();
+    const html = document.body.innerHTML;
+    expect(html).not.toContain('alex.johnson@example.com');
   });
 
   it('triggers onDownloadReportPdf when clicking the Download Report button', () => {

@@ -169,7 +169,7 @@ export function HistoryPage() {
                     Analyzed {formatRelativeDate(item.createdAt)}
                   </span>
                   <Link
-                    to={`/analysis?resumeId=${encodeURIComponent(item.resumeId)}`}
+                    to={`/resume/report/${encodeURIComponent(item.resumeId)}/${encodeURIComponent(item.analysisId)}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16A36A] hover:bg-[#138A5A] text-white font-bold text-xs transition-colors"
                   >
                     <span>View Report</span>

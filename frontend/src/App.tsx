@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('@/pages/Login').then((m) => ({ default: m.L
 const SignupPage = lazy(() => import('@/pages/Signup').then((m) => ({ default: m.SignupPage })));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallback').then((m) => ({ default: m.AuthCallbackPage })));
 const ResumeAnalysisPage = lazy(() => import('@/pages/ResumeAnalysis').then((m) => ({ default: m.ResumeAnalysisPage })));
+const ReportPage = lazy(() => import('@/pages/Report').then((m) => ({ default: m.ReportPage })));
 const HistoryPage = lazy(() => import('@/pages/History').then((m) => ({ default: m.HistoryPage })));
 const CoverLettersPage = lazy(() => import('@/pages/CoverLetters').then((m) => ({ default: m.CoverLettersPage })));
 const SettingsPage = lazy(() => import('@/pages/Settings').then((m) => ({ default: m.SettingsPage })));
@@ -45,6 +46,7 @@ export function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/analysis" element={<ResumeAnalysisPage />} />
+              <Route path="/resume/report/:resumeId/:analysisId" element={<ReportPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/cover-letters" element={<CoverLettersPage />} />
               <Route path="/settings" element={<SettingsPage />} />

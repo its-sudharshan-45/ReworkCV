@@ -24,6 +24,7 @@ import type {
   JobMatchAnalysis,
   ResumeDetail,
 } from '@/features/resume/types/resume';
+import { maskEmail, maskPhone } from '@/features/resume/utils/privacy';
 import { Button } from '@/components/ui/button';
 
 interface CakeMeReportProps {
@@ -80,10 +81,13 @@ export function CakeMeReport({
 
   const candidateName =
     rawPersonal?.personal?.name ?? rawPersonal?.structuredResume?.personal?.name ?? null;
-  const candidatePhone =
+  const rawPhone =
     rawPersonal?.personal?.phone ?? rawPersonal?.structuredResume?.personal?.phone ?? null;
-  const candidateEmail =
+  const rawEmail =
     rawPersonal?.personal?.email ?? rawPersonal?.structuredResume?.personal?.email ?? null;
+  // Mask contact info for privacy; omit when unavailable.
+  const candidatePhone = maskPhone(rawPhone) ?? null;
+  const candidateEmail = maskEmail(rawEmail) ?? null;
   const candidateLinks = rawPersonal?.personal?.links ?? [];
 
   // Match score — real value from job match analysis or resume completeness score
@@ -372,6 +376,102 @@ export function CakeMeReport({
                 ))}
               </div>
             </div>
+          )}
+        </section>
+      )}
+
+      {/* ================= 1b. AI INSIGHTS (RAG) ================= */}
+      {(activeTab === 'all' || activeTab === 'overview') && analysis?.aiInsights && (
+        <section className="shadow-xs print-avoid-break space-y-6 rounded-3xl border border-violet-200/70 bg-white p-6 sm:p-8 dark:border-violet-800/40 dark:bg-slate-900">
+          <div className="border-b border-slate-100 pb-3 dark:border-slate-800">
+            <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
+              <Sparkles className="h-5 w-5 text-violet-600" />
+              AI Insights
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Contextual guidance grounded in your resume and the job description. Scores above remain deterministic.
+            </p>
+          </div>
+
+          <p className="text-xs font-medium leading-relaxed text-slate-700 sm:text-sm dark:text-slate-300">
+            {analysis.aiInsights.summary}
+          </p>
+
+          {analysis.aiInsights.weaknesses.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Areas to Strengthen
+              </h3>
+              <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                {analysis.aiInsights.weaknesses.map((w, idx) => (
+                  <li
+                    key={idx}
+                    className="space-y-1 rounded-xl border border-rose-500/15 bg-rose-50/40 p-2.5 dark:bg-rose-950/10"
+                  >
+                    <p className="font-bold text-slate-900 dark:text-slate-100">{w.title}</p>
+                    <p>{w.explanation}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Evidence: {w.evidence}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {analysis.aiInsights.recommendations.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Recommended Actions
+              </h3>
+              <div className="space-y-2 text-xs">
+                {analysis.aiInsights.recommendations.map((rec, idx) => (
+                  <div
+                    key={idx}
+                    className={`space-y-1 rounded-2xl border p-3.5 ${
+                      rec.priority === 'high'
+                        ? 'border-rose-500/20 bg-rose-50/40 dark:bg-rose-950/20'
+                        : rec.priority === 'medium'
+                          ? 'border-amber-500/20 bg-amber-50/40 dark:bg-amber-950/20'
+                          : 'border-slate-200/80 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'
+                    }`}
+                  >
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      [{rec.priority.toUpperCase()}] {rec.recommendation}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{rec.reason}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {analysis.aiInsights.bulletAnalysis.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Bullet Improvements
+              </h3>
+              <div className="space-y-2 text-xs">
+                {analysis.aiInsights.bulletAnalysis.map((b, idx) => (
+                  <div
+                    key={idx}
+                    className="space-y-1 rounded-2xl border border-slate-200/80 bg-slate-50 p-3.5 dark:border-slate-700 dark:bg-slate-800/50"
+                  >
+                    <p className="italic text-slate-600 dark:text-slate-400">“{b.original}”</p>
+                    <p className="text-slate-700 dark:text-slate-300">
+                      <span className="font-bold">Issue: </span>
+                      {b.issue}
+                    </p>
+                    <p className="text-slate-700 dark:text-slate-300">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">Suggestion: </span>
+                      {b.suggestion}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {analysis.aiInsights.ragNote && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{analysis.aiInsights.ragNote}</p>
           )}
         </section>
       )}
@@ -901,6 +1001,41 @@ export function CakeMeReport({
 
           {!analysis && !projectsSection && (
             <NoDataAvailable label="Style analysis requires an ATS job match. Projects section not detected in resume." />
+          )}
+        </section>
+      )}
+
+      {/* ================= 7. ACTION PLAN (existing recommendations only) ================= */}
+      {analysis?.recommendations && analysis.recommendations.length > 0 && (
+        <section className="shadow-xs print-avoid-break space-y-4 rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-100 pb-3 dark:border-slate-800">
+            <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
+              <Lightbulb className="h-5 w-5 text-[#007A5A]" />
+              Action Plan
+            </h2>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Prioritized next steps from the existing analysis. No new recommendations are generated here.
+            </p>
+          </div>
+          <ol className="space-y-2">
+            {analysis.recommendations.slice(0, 8).map((rec, idx) => (
+              <li
+                key={idx}
+                className="break-words rounded-2xl border border-slate-200/80 bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
+              >
+                <span className="font-bold">
+                  Step {idx + 1} · [{rec.priority.toUpperCase()}]
+                </span>{' '}
+                {rec.text}
+                {rec.impact && <span className="mt-1 block text-[11px] text-slate-500">{rec.impact}</span>}
+              </li>
+            ))}
+          </ol>
+          {analysis.keywordDetail && analysis.keywordDetail.missing.length > 0 && (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-50/40 p-3.5 text-xs dark:bg-amber-950/10">
+              <span className="font-bold">Keywords to consider (only where truthful): </span>
+              <span className="break-words">{analysis.keywordDetail.missing.slice(0, 12).join(', ')}</span>
+            </div>
           )}
         </section>
       )}

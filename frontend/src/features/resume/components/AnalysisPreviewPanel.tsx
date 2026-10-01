@@ -179,13 +179,14 @@ export function AnalysisPreviewPanel({
   const score = analysis?.matchScore ?? resume?.score ?? 0;
   const hasData = !!(analysis || (resume && (resume.score ?? 0) > 0));
 
-  // Real breakdown scores from JobMatchBreakdown (each 0-100)
+  // Real breakdown scores from JobMatchBreakdown (each 0-100).
+  // No fallbacks: when analysis is absent, scores stay 0 and sections show empty states.
   const bd = analysis?.breakdown;
-  const skillsScore: number = bd?.skills ?? (analysis ? 70 : 0);
-  const experienceScore: number = bd?.experience ?? (analysis ? 75 : 0);
-  const keywordsScore: number = bd?.keywords ?? (analysis ? 65 : 0);
-  const responsibilityScore: number = bd?.responsibilities ?? (analysis ? 72 : 0);
-  const educationScore: number = bd?.education ?? (analysis ? 80 : 0);
+  const skillsScore: number = bd?.skills ?? 0;
+  const experienceScore: number = bd?.experience ?? 0;
+  const keywordsScore: number = bd?.keywords ?? 0;
+  const responsibilityScore: number = bd?.responsibilities ?? 0;
+  const educationScore: number = bd?.education ?? 0;
 
   // Compute "issues" proxy (lower score = more issues, max ~5)
   const contentIssues = analysis ? Math.round((1 - keywordsScore / 100) * 5) : 0;
@@ -196,19 +197,12 @@ export function AnalysisPreviewPanel({
   const totalIssues = contentIssues + skillsIssues + formatIssues + sectionsIssues;
 
   const strengths: string[] =
-    analysis?.strengths && analysis.strengths.length > 0
-      ? analysis.strengths
-      : [
-          'Demonstrates proficiency in backend technologies such as Node.js, AWS, and SQL/NoSQL databases.',
-          'Extensive experience working with AWS and building scalable microservices architecture.',
-        ];
+    analysis?.strengths && analysis.strengths.length > 0 ? analysis.strengths : [];
   const improvements: string[] =
     analysis?.recommendations && analysis.recommendations.length > 0
       ? analysis.recommendations.map((r) => r.text)
-      : [
-          'Add measurable results such as system uptime improvements or performance metrics to demonstrate the impact of your work.',
-        ];
-  const jobTitle = resume?.originalFilename || 'Backend Engineer / Google';
+      : [];
+  const jobTitle = resume?.originalFilename || 'Resume Analysis';
 
   const radarScores = {
     content: keywordsScore,
@@ -393,22 +387,19 @@ export function AnalysisPreviewPanel({
                         <h5 className="text-xs font-bold text-slate-800">Almost there! Let's refine your content to make it more impactful and error-free.</h5>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <div className="bg-white px-2.5 py-1 rounded shadow-xs text-[10px] text-slate-600 font-medium">
-                            Measurable Results: <span className="font-bold text-amber-600">{contentIssues || 3}</span>
-                          </div>
-                          <div className="bg-white px-2.5 py-1 rounded shadow-xs text-[10px] text-slate-600 font-medium">
-                            Spelling &amp; Grammar: <span className="font-bold text-amber-600">5</span>
+                            Measurable Results: <span className="font-bold text-amber-600">{contentIssues}</span>
                           </div>
                         </div>
                       </div>
                       <div className="shrink-0 w-12 h-8 border border-emerald-400 bg-white rounded-md flex items-center justify-center shadow-xs">
-                        <span className="text-emerald-600 font-bold text-xs">✓ {score || 92}</span>
+                        <span className="text-emerald-600 font-bold text-xs">✓ {score}</span>
                       </div>
                     </div>
                     <div className="mt-2.5 bg-[#FFFBEB] rounded-lg p-2.5 border border-[#FDE68A] flex items-start gap-2">
                       <span className="text-amber-500 text-xs font-bold shrink-0 mt-0.5">!</span>
                       <p className="text-[11px] text-slate-700">
                         <span className="font-bold text-slate-800">Measurable Results: </span>
-                        {improvements[0] || 'Add specific, measurable achievements to highlight the impact of your work.'}
+                        {improvements[0] ?? 'Add measurable outcomes to your experience bullets where truthful.'}
                       </p>
                     </div>
                   </div>
