@@ -20,6 +20,7 @@ ReworkCV uses sequential, numbered SQL migrations applied in order against a Sup
 | `resumes` | 003 | Uploaded resume records with extracted + structured data |
 | `resume_job_analysis` | 014 | ATS job-description match analysis results |
 | `cover_letters` | 020 | AI-generated cover letters tied to a resume + job description |
+| `knowledge_documents`, `knowledge_chunks` | 022 | Global RAG knowledge base (trusted content; separate from private user data) |
 
 ## Migration Files
 
@@ -34,6 +35,7 @@ ReworkCV uses sequential, numbered SQL migrations applied in order against a Sup
 | 017 | `017_drop_legacy_tables.sql` | Dropped 16 legacy tables (job board, roadmaps, interviews, etc.) |
 | 020 | `020_cover_letters_and_cleanup.sql` | `cover_letters` table; drops `resume_versions` & `notifications` |
 | 021 | `021_drop_out_of_scope_tables.sql` | Drops aptitude, coding, adaptive & AI model registry tables |
+| 022 | `022_rag_knowledge.sql` | RAG knowledge base (`knowledge_documents`, `knowledge_chunks` + pgvector index) |
 
 ## Apply (Supabase SQL Editor or psql)
 
