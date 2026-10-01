@@ -4,6 +4,16 @@ import type { ResumeRepository } from './resume.repository.js';
 import type { ResumeJobAnalysisRepository } from './resume-job-analysis.repository.js';
 import type { ResumeRecord } from './resume.types.js';
 import { AppError } from '../../utils/errors.js';
+import { aiInsightsService } from '../rag/ai-insights.service.js';
+
+// Isolate deterministic unit behavior from the RAG/AI layer (network + LLMs).
+// RAG integration itself is covered in src/modules/rag/ai-insights.service.test.ts.
+vi.mock('../rag/ai-insights.service.js', () => ({
+  aiInsightsService: {
+    generateInsights: vi.fn().mockResolvedValue(null),
+    mergeWithDeterministic: vi.fn((deterministic: unknown) => deterministic),
+  },
+}));
 
 describe('ResumeJobAnalysisService', () => {
   const userId = 'user-123';
@@ -114,6 +124,32 @@ describe('ResumeJobAnalysisService', () => {
     expect(jobAnalysisRepo.create).toHaveBeenCalled();
   });
 
+  it('keeps deterministic scores authoritative when RAG insights are merged', async () => {
+    const { service } = createService();
+    const fakeInsights = {
+      summary: 'RAG contextual summary.',
+      strengths: [],
+      weaknesses: [],
+      recommendations: [],
+      bulletAnalysis: [],
+      ragUsed: true,
+    };
+    vi.mocked(aiInsightsService.generateInsights).mockResolvedValueOnce(fakeInsights as never);
+    vi.mocked(aiInsightsService.mergeWithDeterministic).mockImplementationOnce(
+      ((deterministic: unknown) => ({ ...(deterministic as object), aiInsights: fakeInsights })) as never,
+    );
+
+    const response = await service.analyzeResumeForJob(userId, {
+      resumeId,
+      jobTitle: 'Full Stack Engineer',
+      jobDescription: 'Seeking Full Stack Engineer with React, Node.js, and PostgreSQL expertise.',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data.matchScore).toBeGreaterThanOrEqual(0);
+    expect(response.data.aiInsights?.summary).toBe('RAG contextual summary.');
+  });
+
   it('throws 404 if resume not found', async () => {
     const { service } = createService({ resumeRecord: null });
 
@@ -165,5 +201,79 @@ describe('ResumeJobAnalysisService', () => {
 
     await expect(service.getLatestJobAnalysis('other-user-456', resumeId)).rejects.toThrow('Resume not found');
     await expect(service.listJobAnalyses('other-user-456', resumeId)).rejects.toThrow('Resume not found');
+  });
+
+  describe('getJobAnalysis', () => {
+    const analysisRecord = {
+      id: 'analysis-123',
+      user_id: userId,
+      resume_id: resumeId,
+      job_title: 'Full Stack Dev',
+      job_description: 'Seeking Full Stack Engineer with React expertise.',
+      job_requirements: {},
+      match_score: 85,
+      analysis_result: { matchScore: 85, category: 'Strong Match' },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const createDetailService = (overrides?: {
+      resumeRecord?: ResumeRecord | null;
+      analysisRecord?: typeof analysisRecord | null;
+    }) => {
+      const resumeRepo = {
+        findByIdForUser: vi.fn().mockResolvedValue(
+          overrides?.resumeRecord !== undefined ? overrides.resumeRecord : mockResume,
+        ),
+      } as unknown as ResumeRepository;
+
+      const jobAnalysisRepo = {
+        findByIdForUser: vi.fn().mockResolvedValue(
+          overrides?.analysisRecord !== undefined ? overrides.analysisRecord : analysisRecord,
+        ),
+      } as unknown as ResumeJobAnalysisRepository;
+
+      return { service: new ResumeJobAnalysisService(resumeRepo, jobAnalysisRepo), jobAnalysisRepo };
+    };
+
+    it('returns full analysis detail including job context', async () => {
+      const { service, jobAnalysisRepo } = createDetailService();
+
+      const result = await service.getJobAnalysis(userId, resumeId, 'analysis-123');
+
+      expect(result.success).toBe(true);
+      expect(result.analysisId).toBe('analysis-123');
+      expect(result.resumeId).toBe(resumeId);
+      expect(result.jobTitle).toBe('Full Stack Dev');
+      expect(result.jobDescription).toContain('React');
+      expect(result.data.matchScore).toBe(85);
+      expect(jobAnalysisRepo.findByIdForUser).toHaveBeenCalledWith('analysis-123', userId);
+    });
+
+    it('throws 404 when resume is not found', async () => {
+      const { service } = createDetailService({ resumeRecord: null });
+
+      await expect(service.getJobAnalysis(userId, resumeId, 'analysis-123')).rejects.toThrow(
+        'Resume not found',
+      );
+    });
+
+    it('throws 404 when analysis does not exist', async () => {
+      const { service } = createDetailService({ analysisRecord: null });
+
+      await expect(service.getJobAnalysis(userId, resumeId, 'missing-id')).rejects.toThrow(
+        'Job analysis not found',
+      );
+    });
+
+    it('throws 404 when analysis belongs to a different resume', async () => {
+      const { service } = createDetailService({
+        analysisRecord: { ...analysisRecord, resume_id: 'other-resume-id' },
+      });
+
+      await expect(service.getJobAnalysis(userId, resumeId, 'analysis-123')).rejects.toThrow(
+        'Job analysis not found',
+      );
+    });
   });
 });

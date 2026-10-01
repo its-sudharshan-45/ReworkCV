@@ -48,3 +48,16 @@ export interface AnalyzeJobResponse {
   data: import('../../ai/job/job-types.js').JobMatchAnalysis;
   analysisId: string;
 }
+
+// ---------------------------------------------------------------------------
+// Single-analysis detail response (powers the dedicated report page route)
+// ---------------------------------------------------------------------------
+export interface JobAnalysisDetailResponse {
+  success: true;
+  data: import('../../ai/job/job-types.js').JobMatchAnalysis;
+  analysisId: string;
+  resumeId: string;
+  jobTitle: string | null;
+  jobDescription: string;
+  createdAt: string;
+}

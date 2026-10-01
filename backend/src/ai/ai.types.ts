@@ -1,4 +1,4 @@
-export type AiProviderName = 'groq' | 'anthropic' | 'openai';
+export type AiProviderName = 'local' | 'groq' | 'anthropic' | 'openai';
 
 export interface AiChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -11,6 +11,13 @@ export interface AiCompletionOptions {
   maxTokens?: number;
   responseFormat?: 'text' | 'json';
   timeoutMs?: number;
+  /**
+   * Optional per-provider response validator. Runs after each provider
+   * returns, before the result is accepted: throw (or let JSON.parse / Zod
+   * throw) to mark the provider failed and fall through to the next one.
+   * Must NOT reject legitimate content such as empty arrays.
+   */
+  validate?: (content: string) => void;
 }
 
 export interface AiCompletionResult {

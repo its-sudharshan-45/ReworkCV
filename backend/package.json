@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "upskilr": "tsx src/ai/cli/cli.ts"
+    "upskilr": "tsx src/ai/cli/cli.ts",
+    "rag:seed": "tsx src/modules/rag/rag-seed.cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

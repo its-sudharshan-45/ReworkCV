@@ -206,12 +206,13 @@ describe('AiService Provider Router & Fallback', () => {
     });
 
     const health = await service.checkProviderHealth();
-    expect(health).toHaveLength(3);
-    expect(health[0].provider).toBe('groq');
-    expect(health[0].configured).toBe(true);
-    expect(health[0].available).toBe(true);
-    expect(health[1].provider).toBe('anthropic');
-    expect(health[2].provider).toBe('openai');
+    expect(health).toHaveLength(4);
+    expect(health[0].provider).toBe('local');
+    expect(health[1].provider).toBe('groq');
+    expect(health[1].configured).toBe(true);
+    expect(health[1].available).toBe(true);
+    expect(health[2].provider).toBe('anthropic');
+    expect(health[3].provider).toBe('openai');
 
     const jsonString = JSON.stringify(health);
     expect(jsonString).not.toContain('apiKey');

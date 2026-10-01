@@ -89,6 +89,18 @@ export async function getLatestJobAnalysis(req: Request, res: Response): Promise
   res.status(200).json({ analysis });
 }
 
+export async function getJobAnalysis(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new AppError('Authentication required', 401, 'AUTHENTICATION_ERROR');
+  }
+
+  const resumeId = getRouteParam(req.params, 'id');
+  const analysisId = getRouteParam(req.params, 'analysisId');
+  const analysis = await resumeJobAnalysisService.getJobAnalysis(req.user.id, resumeId, analysisId);
+
+  res.status(200).json({ analysis });
+}
+
 export async function exportReportPdf(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     throw new AppError('Authentication required', 401, 'AUTHENTICATION_ERROR');

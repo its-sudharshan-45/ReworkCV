@@ -3,6 +3,7 @@ import { requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
   deleteResume,
+  getJobAnalysis,
   getResume,
   listResumes,
   processResume,
@@ -23,5 +24,6 @@ resumeRouter.post('/:id/process', asyncHandler(requireAuth), asyncHandler(proces
 resumeRouter.post('/:id/analyze-job', asyncHandler(requireAuth), asyncHandler(analyzeResumeForJob));
 resumeRouter.get('/:id/job-analyses', asyncHandler(requireAuth), asyncHandler(listJobAnalyses));
 resumeRouter.get('/:id/job-analyses/latest', asyncHandler(requireAuth), asyncHandler(getLatestJobAnalysis));
+resumeRouter.get('/:id/job-analyses/:analysisId', asyncHandler(requireAuth), asyncHandler(getJobAnalysis));
 resumeRouter.get('/:id/report/pdf', asyncHandler(requireAuth), asyncHandler(exportReportPdf));
 resumeRouter.delete('/:id', asyncHandler(requireAuth), asyncHandler(deleteResume));

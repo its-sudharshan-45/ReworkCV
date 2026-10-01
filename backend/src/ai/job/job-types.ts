@@ -5,6 +5,8 @@
  * without touching the matching logic.
  */
 
+import type { AiInsights } from '../../modules/rag/rag.types.js';
+
 // ---------------------------------------------------------------------------
 // Configurable ATS weighting (must sum to 1.0)
 // ---------------------------------------------------------------------------
@@ -143,4 +145,6 @@ export interface JobMatchAnalysis {
     text: string;
     impact: string;
   }>;
+  // RAG/AI insights (optional; deterministic fields above stay authoritative)
+  aiInsights?: AiInsights;
 }
