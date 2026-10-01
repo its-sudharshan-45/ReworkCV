@@ -68,3 +68,27 @@ DELETE /api/v1/jobs/:id
 ```
 
 Job requirement extraction and resume-to-job matching use deterministic rules. Match score weights: required skills 70%, preferred skills 20%, section alignment 10%.
+
+## RAG Resume Intelligence
+
+Retrieval-Augmented Generation enhances (never replaces) deterministic analysis:
+
+```text
+Resume + JD -> Parser -> Deterministic Analysis -> RAG Retrieval -> AI Reasoning
+  -> JSON Schema Validation -> Merge (scores authoritative) -> REPORT_DATA -> UI/PDF
+```
+
+- Knowledge base: `knowledge_documents` + `knowledge_chunks` (migration 022, pgvector 384-dim), seeded via `npm run rag:seed`.
+- Layers: `EmbeddingService` (default local `hash`, opt-in `transformers`) -> `RagRetrievalService` (vector + keyword + metadata hybrid) -> `AiInsightsService` (single structured LLM call, evidence-grounded, prompt-injection guarded).
+- `POST /api/v1/rag/search` and `POST /api/v1/rag/analyze` (auth); `POST /api/v1/rag/ingest|reindex`, `DELETE /api/v1/rag/documents/:id` (admin `x-admin-api-key` only).
+- Fallback: any RAG/AI failure (bounded by `RAG_TIMEOUT_MS`) degrades to deterministic-only; existing scans never break.
+- Config: `RAG_ENABLED`, `RAG_TOP_K`, `RAG_SIMILARITY_THRESHOLD`, `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `EMBEDDING_PROVIDER`, `EMBEDDING_DIMENSIONS`, `RAG_MAX_CONTEXT_CHARS`, `RAG_CACHE_TTL_MS`, `RAG_TIMEOUT_MS`.
+
+## Local-first AI + fallback
+
+`AiService` is the central provider router (primary-first, ordered fallback). Default chain: `local → groq → anthropic → openai → deterministic-only`. The local provider (`LocalProvider`) talks to an Ollama-compatible server and needs no cloud API key; cloud keys stay backend-only and optional.
+
+- `AI_PRIMARY_PROVIDER=local`, `AI_FALLBACK_PROVIDERS=groq,anthropic,openai`
+- `LOCAL_AI_ENABLED / LOCAL_AI_BASE_URL / LOCAL_AI_MODEL / LOCAL_AI_TIMEOUT_MS`
+- Optional per-provider caps: `GROQ_TIMEOUT_MS / ANTHROPIC_TIMEOUT_MS / OPENAI_TIMEOUT_MS` (else `AI_TIMEOUT_MS`); total chain budget `AI_FALLBACK_BUDGET_MS`; outer scan cap `RAG_TIMEOUT_MS`.
+- Malformed JSON / schema-invalid output counts as provider failure and triggers fallback; legitimate empty arrays do not. `AiInsightsService` records the winning provider in `aiInsights.provider` (internal metadata).
