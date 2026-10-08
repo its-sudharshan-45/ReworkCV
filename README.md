@@ -73,7 +73,7 @@ npm run dev
 
 # Or run separately:
 npm run dev:backend   # API server on http://localhost:4000
-npm run dev:frontend  # Web client on http://localhost:5173
+npm run dev:frontend  # Web client on http://localhost:3000
 ```
 
 ---

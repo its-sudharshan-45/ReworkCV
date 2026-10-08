@@ -12,7 +12,7 @@ services:
     ports:
       - '4000:4000'
     env_file:
-      - path: ./backend/.env
+      - ./backend/.env
     environment:
       NODE_ENV: production
     restart: unless-stopped
