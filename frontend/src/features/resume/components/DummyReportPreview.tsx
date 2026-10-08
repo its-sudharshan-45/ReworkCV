@@ -195,41 +195,19 @@ export function DummyReportPreview() {
       className="w-full overflow-hidden rounded-2xl bg-white font-sans"
       style={{ border: '1px solid #EDE4FF', boxShadow: '0 20px 40px -15px rgba(124,58,237,0.12)' }}
     >
-      {/* Top mini navigation (static mock) */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-slate-100 bg-[#FCFDFD] px-4 py-2.5 sm:px-5">
+      {/* Sample banner (static mock) */}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-[#FCFDFD] px-4 py-2.5 sm:px-5">
         <div className="flex shrink-0 items-center gap-1.5">
-          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#7C3AED] text-[11px] font-black text-white">
-            R
-          </span>
           <span className="text-sm font-bold tracking-tight text-slate-900">
             Rework<span className="text-[#7C3AED]">CV</span>
           </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-3 text-xs font-semibold text-slate-400">
-          <span className="border-b-2 border-[#7C3AED] pb-1 pt-1 text-[#7C3AED]">
-            <span className="text-[11px] font-normal text-slate-400">Step 1 </span>Report
-          </span>
-          <span className="hidden sm:inline">
-            <span className="text-[11px] font-normal">Step 2 </span>Resume
-          </span>
-          <span className="hidden sm:inline">
-            <span className="text-[11px] font-normal">Step 3 </span>Cover Letter
+          <span className="rounded-full border border-slate-200 px-2.5 py-0.5 text-[10.5px] font-bold text-slate-500">
+            Sample report
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-xs">
-            + New Scan
-          </span>
-          <span className="hidden items-center gap-1 text-xs font-semibold text-slate-500 md:flex">
-            Scan History
-          </span>
-          <span className="flex items-center gap-1.5 select-none">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#7C3AED] text-[11px] font-bold text-white">
-              S
-            </span>
-            <span className="hidden text-xs font-semibold text-slate-700 lg:inline">Sudharshan</span>
-          </span>
-        </div>
+        <p className="shrink-0 text-[11px] font-medium text-slate-400">
+          Your personalized report appears here after analysis
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 p-4 sm:p-5 md:grid-cols-12">

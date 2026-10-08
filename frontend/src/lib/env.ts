@@ -36,6 +36,28 @@ const rawSupabaseUrl = getEnvVar('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'
 const rawSupabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key');
 const rawApiUrl = getEnvVar('VITE_API_URL', 'NEXT_PUBLIC_API_URL', 'http://localhost:4000/api/v1');
 
+// Fail-closed in production: placeholder fallbacks must never ship to prod.
+// In dev/test the fallbacks keep Vitest and local startup working.
+function isProdBuild(): boolean {
+  try {
+    return typeof import.meta !== 'undefined' && Boolean(import.meta.env?.PROD);
+  } catch {
+    return false;
+  }
+}
+
+if (isProdBuild()) {
+  const placeholders = ['https://example.supabase.co', 'test-anon-key', 'http://localhost:4000/api/v1'];
+  if (placeholders.includes(rawSupabaseUrl) || placeholders.includes(rawSupabaseAnonKey) || placeholders.includes(rawApiUrl)) {
+    throw new Error(
+      'Missing production configuration: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, and VITE_API_URL must be set.',
+    );
+  }
+  if (rawApiUrl.startsWith('http://')) {
+    throw new Error('Insecure production configuration: VITE_API_URL must use https:// in production.');
+  }
+}
+
 export const clientEnv = clientEnvSchema.parse({
   VITE_SUPABASE_URL: rawSupabaseUrl,
   VITE_SUPABASE_ANON_KEY: rawSupabaseAnonKey,

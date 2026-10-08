@@ -31,13 +31,13 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
             (user.user_metadata?.name as string | undefined) ||
             (email.split('@')[0] ? email.split('@')[0] : '') ||
             '';
-          setResolvedUserName(name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Sudharshan');
+          setResolvedUserName(name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Account');
           setResolvedUserEmail(email);
         } else if (!resolvedUserName) {
-          setResolvedUserName('Sudharshan');
+          setResolvedUserName('Account');
         }
       } catch {
-        if (!resolvedUserName) setResolvedUserName('Sudharshan');
+        if (!resolvedUserName) setResolvedUserName('Account');
       }
     }
     void loadUser();
@@ -62,7 +62,7 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
     }
   }
 
-  const displayName = resolvedUserName || 'Sudharshan';
+  const displayName = resolvedUserName || 'Account';
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (

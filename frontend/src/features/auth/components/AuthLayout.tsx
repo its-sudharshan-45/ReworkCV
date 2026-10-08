@@ -25,8 +25,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 />
               </span>
             </Link>
-            <p className="mt-3 text-[17px] font-extrabold tracking-tight">
-              Rework<span className="text-[#D61F9E]">CV</span>
+            <p className="mt-3 font-display text-[17px] font-extrabold tracking-tight">
+              Rework<span className="text-[#6D28D9]">CV</span>
             </p>
           </div>
           <div className="mt-2">{children}</div>

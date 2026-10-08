@@ -115,18 +115,14 @@ function CandidateAnalysisCard() {
           <span className="h-2.5 w-2.5 rounded-full bg-[#C4B5FD]" />
         </span>
         <p className="truncate text-[12px] font-medium text-slate-500">Candidate_Analysis_v3.pdf</p>
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#F5F3FF] border border-purple-100 px-2.5 py-1 text-[10.5px] font-bold text-[#6D28D9]">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute h-full w-full animate-ping rounded-full bg-[#7C3AED] opacity-60 motion-reduce:animate-none" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[#7C3AED]" />
-          </span>
-          Live Benchmark
+        <span className="ml-auto shrink-0 rounded-full border border-slate-200 px-2.5 py-1 text-[10.5px] font-bold text-slate-500">
+          Sample output
         </span>
       </div>
 
       {/* Score + diagnostics */}
       <div className="mt-3 grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2">
-        <div className="flex items-center gap-3 rounded-2xl bg-[#F5F3FF] p-3.5 transition-colors motion-safe:hover:bg-[#EFEAFF]">
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 shadow-[0_2px_10px_rgba(30,18,53,0.05)]">
           <MatchDonut score={94} animate={visible} />
           <div className="min-w-0">
             <p className="text-[13px] font-extrabold tracking-tight text-slate-900">Job Match Score</p>
@@ -137,7 +133,7 @@ function CandidateAnalysisCard() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-[#F5F3FF] p-3.5 transition-colors motion-safe:hover:bg-[#EFEAFF]">
+        <div className="rounded-2xl border border-slate-100 bg-white p-3.5 shadow-[0_2px_10px_rgba(30,18,53,0.05)]">
           <div className="flex items-center justify-between">
             <p className="text-[12px] font-extrabold text-slate-900">Diagnostic Dimensions</p>
             <span className="text-[10.5px] font-semibold text-slate-400">Optimal</span>
@@ -178,13 +174,8 @@ function CandidateAnalysisCard() {
             <Check className="h-3 w-3 text-[#6D28D9]" strokeWidth={3} /> {chip}
           </span>
         ))}
-        <span
-          className={`inline-flex cursor-default items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-400 transition-all duration-500 motion-safe:hover:bg-slate-200 ${
-            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-          }`}
-          style={{ transitionDelay: '620ms' }}
-        >
-          +3 Suggested
+        <span className="inline-flex cursor-default items-center rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-400">
+          +3 suggested
         </span>
       </div>
 
@@ -224,34 +215,41 @@ export function HeroSection() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-14 md:pt-16 md:pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 items-center">
         {/* Left: headline + CTAs */}
         <div>
-          <h1 className="text-[2.6rem] sm:text-6xl font-extrabold tracking-tight leading-[1.05] text-[#1E1235]">
-            Turn Your Resume Into
+          <h1 className="font-display text-[2.75rem] sm:text-6xl font-extrabold tracking-tight leading-[1.04] text-[#1E1235]">
+            Turn your resume into
             <br />
-            Your <span className="text-[#6D28D9]">Next Opportunity.</span>
+            your <span className="text-[#6D28D9]">unfair advantage.</span>
           </h1>
-          <p className="mt-5 text-[15px] leading-relaxed text-slate-500 max-w-md">
-            Understand where your resume stands, improve it for your target job, and build a
-            stronger application with AI-powered guidance.
+          <p className="mt-5 text-[16px] leading-relaxed text-slate-600 max-w-md">
+            Upload your resume and a target job description. ReworkCV scores your ATS
+            fit, pinpoints exactly what to fix, and helps you apply with confidence.
           </p>
-          <div className="mt-7 flex flex-wrap items-center gap-5">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/analysis"
-              className="inline-flex items-center gap-2 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-[14px] font-bold px-6 py-3 rounded-full transition-all hover:shadow-lg hover:shadow-purple-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 bg-[#6D28D9] hover:bg-[#5B21B6] text-white text-[15px] font-bold px-7 py-3.5 rounded-full transition-all hover:shadow-lg hover:shadow-purple-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
             >
               Analyze My Resume
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#how-it-works"
-              className="text-[14px] font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-[14px] font-bold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50"
             >
               See How It Works
             </a>
           </div>
-          <p className="mt-8 text-[12px] text-slate-400">
-            Resume Analysis <span className="mx-1.5 text-slate-300">·</span> AI Resume Coach{' '}
-            <span className="mx-1.5 text-slate-300">·</span> Tailored Cover Letter
-          </p>
+          <ul className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-slate-600">
+            <li className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-600" strokeWidth={3} /> ATS fit scoring
+            </li>
+            <li className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-600" strokeWidth={3} /> AI resume coach
+            </li>
+            <li className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-emerald-600" strokeWidth={3} /> Tailored cover letter
+            </li>
+          </ul>
         </div>
 
         {/* Right: benchmark card */}

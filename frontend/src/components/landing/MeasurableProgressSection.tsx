@@ -1,5 +1,6 @@
 import React from 'react';
 import { Reveal } from '@/components/landing/Reveal';
+import { SectionHeader } from '@/components/landing/SectionHeader';
 
 const PILLARS = [
   {
@@ -22,12 +23,13 @@ const PILLARS = [
 export function MeasurableProgressSection() {
   return (
     <section className="bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
-        <Reveal className="text-center">
-          <h2 className="text-center text-2xl md:text-[28px] font-extrabold tracking-tight text-[#1E1235]">
-            Built Around Your Real Experience.
-          </h2>
-        </Reveal>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+        <SectionHeader
+          align="center"
+          eyebrow="Our promise"
+          title="Built around your real experience."
+          sub="Guidance you can trust — because it never invents what you haven't done."
+        />
 
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0">
           {PILLARS.map((pillar, i) => (

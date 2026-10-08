@@ -241,13 +241,7 @@ export function ResumePage() {
   const isBusy = isUploading || isProcessing;
 
   return (
-    <div
-      className="min-h-screen w-full relative flex flex-col font-sans"
-      style={{
-        background:
-          'radial-gradient(circle at 85% 10%, rgba(124, 58, 237, 0.05) 0%, rgba(250, 252, 250, 0) 60%), #FAFCFA',
-      }}
-    >
+    <div className="min-h-screen w-full relative flex flex-col font-sans bg-[#FAFCFA]">
       {/* Stitch Top Bar */}
       <StitchNavbar onOpenHistory={() => setIsHistoryDrawerOpen(true)} />
 
@@ -271,15 +265,12 @@ export function ResumePage() {
           {/* LEFT: Upload Form Column */}
           <section className="lg:col-span-5 flex flex-col">
             {/* Headline */}
-            <h1
-              className="text-3xl sm:text-4xl xl:text-[42px] font-extrabold text-[#1E1235] tracking-tight leading-[1.15] mb-3"
-              style={{ fontFamily: 'Outfit, Inter, sans-serif' }}
-            >
-              Stand Out Before<br />You Even Walk In
+            <h1 className="font-display text-3xl sm:text-4xl xl:text-[42px] font-extrabold text-[#1E1235] tracking-tight leading-[1.12] mb-3">
+              Stand out before<br />you even walk in
             </h1>
-            <p className="text-[14.5px] text-slate-500 leading-relaxed mb-6 max-w-md">
-              ReworkCV tailors your resume to every role, scores it against ATS filters, and writes
-              a cover letter that matches — so you apply with confidence.
+            <p className="text-[15px] text-slate-600 leading-relaxed mb-6 max-w-md">
+              Upload your resume and a target job description. ReworkCV scores the
+              ATS fit and shows exactly what to improve.
             </p>
 
             {/* Alerts */}

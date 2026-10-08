@@ -175,8 +175,8 @@ export function ResumeUpload({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800">
-              <span className="text-lg font-extrabold text-[#7C3AED]">①</span>
+            <h2 className="flex items-center gap-2.5 text-base font-bold text-slate-800">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E1235] text-[12px] font-extrabold text-white">1</span>
               <span>Upload Your Resume</span>
               <span className="text-red-500">*</span>
             </h2>
@@ -338,7 +338,7 @@ export function ResumeUpload({
                           name="saved-resume"
                           checked={selectedSavedId === res.id}
                           onChange={() => setSelectedSavedId(res.id)}
-                          className="accent-[#007A5A]"
+                          className="accent-[#6D28D9]"
                         />
                         <span className="text-xs">{res.originalFilename}</span>
                       </div>
@@ -365,7 +365,7 @@ export function ResumeUpload({
                 onChange={(e) => setPastedResumeText(e.target.value)}
                 placeholder="Paste the raw text of your resume here (Summary, Work Experience, Education, Technical Skills)..."
                 rows={6}
-                className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-xs text-slate-900 placeholder-slate-400 focus:border-[#007A5A] focus:outline-none focus:ring-2 focus:ring-[#007A5A]/30 sm:text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="w-full rounded-2xl border border-slate-300 bg-white p-4 text-xs text-slate-900 placeholder-slate-400 focus:border-[#6D28D9] focus:outline-none focus:ring-2 focus:ring-[#6D28D9]/20 sm:text-sm"
               />
               <p className="text-[11px] text-slate-400">
                 {pastedResumeText.length} characters entered
@@ -377,8 +377,8 @@ export function ResumeUpload({
         {/* Step 2: Add a Job Description* */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-800">
-              <span className="text-lg font-extrabold text-[#7C3AED]">②</span>
+            <h2 className="flex items-center gap-2.5 text-base font-bold text-slate-800">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1E1235] text-[12px] font-extrabold text-white">2</span>
               <span>Add a Job Description</span>
               <span className="text-red-500">*</span>
             </h2>
@@ -462,13 +462,7 @@ export function ResumeUpload({
             type="submit"
             id="analyze-resume-btn"
             disabled={isBusy}
-            className="px-7 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-60 disabled:scale-100"
-            style={{
-              background: isBusy
-                ? '#9CA3AF'
-                : 'linear-gradient(135deg, rgb(124, 58, 237) 0%, rgb(236, 72, 153) 100%)',
-              boxShadow: isBusy ? 'none' : 'rgba(124, 58, 237, 0.4) 0px 10px 25px -5px',
-            }}
+            className="rounded-full bg-[#6D28D9] px-7 py-3 text-sm font-bold text-white shadow-[0_10px_25px_-5px_rgba(124,58,237,0.4)] transition-all hover:bg-[#5B21B6] hover:shadow-[0_14px_30px_-5px_rgba(124,58,237,0.5)] active:scale-[0.98] cursor-pointer disabled:bg-slate-400 disabled:shadow-none"
           >
             {isBusy ? (
               <>

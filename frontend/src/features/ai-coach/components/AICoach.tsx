@@ -257,7 +257,23 @@ export function AICoach({
             ) : (
               <div key={m.id} className="group rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
                 <div className="break-words text-[13px] leading-relaxed text-slate-700 [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_strong]:font-bold [&_strong]:text-slate-900 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:text-[12px] [&_h1]:text-[15px] [&_h1]:font-bold [&_h2]:text-[14px] [&_h2]:font-bold [&_h3]:text-[13px] [&_h3]:font-bold">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      // AI-generated markdown is untrusted: only allow safe
+                      // http(s)/mailto links, opened in a hardened new tab.
+                      a: ({ href, children }) => {
+                        const safe = typeof href === 'string' && /^(https?:|mailto:)/i.test(href);
+                        if (!safe) return <span>{children}</span>;
+                        return (
+                          <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                            {children}
+                          </a>
+                        );
+                      },
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
                 <div className="mt-1.5 flex justify-end">
                   <button
