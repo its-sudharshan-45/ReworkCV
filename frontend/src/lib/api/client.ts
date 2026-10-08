@@ -59,7 +59,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   const contentType = response.headers.get('content-type');
   if (!contentType?.includes('application/json')) {
-    return undefined as T;
+    throw new ApiClientError(response.status, {
+      error: {
+        code: 'UNEXPECTED_RESPONSE',
+        message: `Unexpected ${contentType || 'empty'} response (HTTP ${response.status}). Please try again.`,
+      },
+    });
   }
 
   return (await response.json()) as T;
