@@ -6,6 +6,7 @@ import {
   listCoverLetters,
   getCoverLetter,
   updateCoverLetter,
+  rewriteCoverLetter,
   deleteCoverLetter,
   exportCoverLetter,
 } from './cover-letter.controller.js';
@@ -16,6 +17,7 @@ coverLetterRouter.post('/', asyncHandler(requireAuth), asyncHandler(generateCove
 coverLetterRouter.get('/', asyncHandler(requireAuth), asyncHandler(listCoverLetters));
 coverLetterRouter.get('/:id', asyncHandler(requireAuth), asyncHandler(getCoverLetter));
 coverLetterRouter.patch('/:id', asyncHandler(requireAuth), asyncHandler(updateCoverLetter));
+coverLetterRouter.post('/:id/rewrite', asyncHandler(requireAuth), asyncHandler(rewriteCoverLetter));
 coverLetterRouter.delete('/:id', asyncHandler(requireAuth), asyncHandler(deleteCoverLetter));
 coverLetterRouter.get('/:id/export', asyncHandler(requireAuth), asyncHandler(exportCoverLetter));
 coverLetterRouter.get('/:id/export/:format', asyncHandler(requireAuth), asyncHandler(exportCoverLetter));

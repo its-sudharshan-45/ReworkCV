@@ -38,3 +38,7 @@ export interface GenerateCoverLetterInput {
 export interface UpdateCoverLetterInput {
   content: string;
 }
+
+export interface RewriteCoverLetterInput {
+  feedback: string;
+}

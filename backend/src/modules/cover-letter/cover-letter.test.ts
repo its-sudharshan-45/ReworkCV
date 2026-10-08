@@ -166,6 +166,39 @@ describe('Cover Letter API & Service', () => {
     expect(res.body.coverLetter.content).toBe('Updated content');
   });
 
+  it('rewrites a cover letter with user feedback without inventing new facts', async () => {
+    vi.mocked(generateCoverLetterText).mockResolvedValueOnce(
+      'Dear Hiring Manager,\n\nI am applying for the Frontend Engineer role. My React work maps directly onto it.\n\nSincerely,\nAlex Johnson',
+    );
+    const res = await request(app)
+      .post(`/api/v1/cover-letters/${COVER_LETTER_ID}/rewrite`)
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ feedback: 'Make the opening shorter and mention my React work' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.coverLetter.content).toContain('I am applying for the Frontend Engineer role');
+    expect(generateCoverLetterText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        previousLetter: expect.stringContaining('Dear Hiring Team'),
+        userFeedback: 'Make the opening shorter and mention my React work',
+      }),
+    );
+  });
+
+  it('rejects rewrite feedback that is missing or too short', async () => {
+    const missing = await request(app)
+      .post(`/api/v1/cover-letters/${COVER_LETTER_ID}/rewrite`)
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({});
+    expect(missing.status).toBe(400);
+
+    const short = await request(app)
+      .post(`/api/v1/cover-letters/${COVER_LETTER_ID}/rewrite`)
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ feedback: 'ok' });
+    expect(short.status).toBe(400);
+  });
+
   it('exports cover letter as PDF', async () => {
     const res = await request(app)
       .get(`/api/v1/cover-letters/${COVER_LETTER_ID}/export/pdf`)

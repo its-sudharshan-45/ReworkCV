@@ -59,6 +59,21 @@ export async function updateCoverLetter(req: Request, res: Response): Promise<vo
   res.status(200).json({ coverLetter });
 }
 
+export async function rewriteCoverLetter(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new AppError('Authentication required', 401, 'AUTHENTICATION_ERROR');
+  }
+
+  const id = getRouteParam(req.params, 'id');
+  const { feedback } = req.body;
+  if (typeof feedback !== 'string') {
+    throw new AppError('feedback must be a string', 400, 'VALIDATION_ERROR');
+  }
+
+  const coverLetter = await coverLetterService.rewriteCoverLetter(id, req.user.id, { feedback });
+  res.status(200).json({ coverLetter });
+}
+
 export async function deleteCoverLetter(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     throw new AppError('Authentication required', 401, 'AUTHENTICATION_ERROR');

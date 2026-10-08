@@ -8,6 +8,7 @@ import type {
   CoverLetterRecord,
   CoverLetterResponse,
   GenerateCoverLetterInput,
+  RewriteCoverLetterInput,
   UpdateCoverLetterInput,
 } from './cover-letter.types.js';
 import type { StructuredResume } from '../../ai/resume/resume-types.js';
@@ -125,6 +126,66 @@ export class CoverLetterService {
 
   async updateCoverLetter(id: string, userId: string, input: UpdateCoverLetterInput): Promise<CoverLetterResponse> {
     const updated = await this.repository.updateContent(id, userId, input.content);
+    if (!updated) {
+      throw new AppError('Cover letter not found', 404, 'NOT_FOUND');
+    }
+    return mapCoverLetterToResponse(updated);
+  }
+
+  /**
+   * Revise an owned cover letter using the candidate's own suggestions.
+   * The rewrite is grounded in the same resume + job context as the original
+   * draft; only the requested changes are applied.
+   */
+  async rewriteCoverLetter(
+    id: string,
+    userId: string,
+    input: RewriteCoverLetterInput,
+  ): Promise<CoverLetterResponse> {
+    const feedback = (input.feedback ?? '').trim();
+    if (feedback.length < 3) {
+      throw new AppError('Please describe the changes you would like (at least 3 characters)', 400, 'VALIDATION_ERROR');
+    }
+    if (feedback.length > 2000) {
+      throw new AppError('Feedback must be 2000 characters or fewer', 400, 'VALIDATION_ERROR');
+    }
+
+    const record = await this.repository.findByIdForUser(id, userId);
+    if (!record) {
+      throw new AppError('Cover letter not found', 404, 'NOT_FOUND');
+    }
+
+    const resume = await resumeRepository.findByIdForUser(record.resume_id, userId);
+    if (!resume) {
+      throw new AppError('Resume not found', 404, 'NOT_FOUND');
+    }
+
+    let analysisContext = null;
+    if (record.job_analysis_id) {
+      const analysisRecord = await resumeJobAnalysisRepository.findByIdForUser(record.job_analysis_id, userId);
+      if (analysisRecord) {
+        analysisContext = analysisRecord.analysis_result as unknown as import('../../ai/job/job-types.js').JobMatchAnalysis;
+      }
+    }
+
+    const structuredData = resume.structured_data;
+    const structuredResume: StructuredResume | undefined =
+      structuredData?.structuredResume ||
+      (structuredData as unknown as { structuredResume?: StructuredResume })?.structuredResume;
+
+    const content = await generateCoverLetterText({
+      structuredResume,
+      extractedResumeText: resume.extracted_text || undefined,
+      jobTitle: record.job_title || undefined,
+      companyName: record.company_name || undefined,
+      jobDescription: record.job_description,
+      analysisContext,
+      tone: (record.tone as 'professional' | 'confident' | 'enthusiastic') || 'professional',
+      previousLetter: record.content,
+      userFeedback: feedback,
+    });
+
+    const updated = await this.repository.updateContent(id, userId, content);
     if (!updated) {
       throw new AppError('Cover letter not found', 404, 'NOT_FOUND');
     }

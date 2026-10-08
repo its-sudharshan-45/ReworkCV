@@ -15,7 +15,22 @@ export interface GenerateCoverLetterOptions {
   jobDescription: string;
   analysisContext?: JobMatchAnalysis | null;
   tone?: 'professional' | 'confident' | 'enthusiastic';
+  /** Previous draft being revised — when set with userFeedback, rewrite instead of drafting fresh. */
+  previousLetter?: string;
+  /** The candidate's own requested changes, applied to previousLetter. */
+  userFeedback?: string;
 }
+
+// Human voice rules shared by fresh drafts and rewrites: the letter must read
+// like a real person wrote it, never like AI output.
+const HUMAN_VOICE_RULES = `HUMAN VOICE (mandatory — the letter must NOT read as AI-generated):
+- Sound like one specific person writing to another: concrete, direct, varied sentence lengths. No ornate or inflated diction.
+- FORBIDDEN openers: "I am writing to express my interest", "I am thrilled/excited to apply", "With a proven track record", "I am confident in my ability", "In today's fast-paced world", "I am passionate about".
+- FORBIDDEN crutches: em dashes (—), "delve", "leverage" (as verb), "robust", "cutting-edge", "seamless", "thrilled", "spearheaded", "utilize" (use "use"), "myriad", "tapestry", "landscape" (metaphorical), "I believe", "very/really" intensifiers, triplet parallelism ("I build, I lead, I deliver").
+- Prefer plain verbs and specific facts: what you built, who used it, what changed. One idea per sentence.
+- NEVER use bracket placeholders like [Hiring Organization] or [Company]. If the company name is unknown, address "the hiring team" and name only the role; never invent a company name.
+- Contractions are allowed where natural ("I'm", "you'll"). Do not overdo them.
+- Keep it to 3 short paragraphs plus greeting and sign-off. No headers, no subject lines, no meta commentary.`;
 
 export async function generateCoverLetterText(options: GenerateCoverLetterOptions): Promise<string> {
   const {
@@ -30,6 +45,8 @@ export async function generateCoverLetterText(options: GenerateCoverLetterOption
     jobDescription,
     analysisContext,
     tone = 'professional',
+    previousLetter,
+    userFeedback,
   } = options;
 
   // Build grounded candidate summary from resume only
@@ -47,8 +64,26 @@ export async function generateCoverLetterText(options: GenerateCoverLetterOption
     ? analysisContext.strengths.join('; ')
     : '';
 
+  const trimmedFeedback = (userFeedback ?? '').trim();
+  const isRewrite = trimmedFeedback.length > 0 && (previousLetter ?? '').trim().length > 0;
+
+  const taskBlock = isRewrite
+    ? `REWRITE TASK:
+Below is the candidate's current cover letter draft followed by THEIR OWN requested changes.
+Revise the draft to apply exactly what they asked for. Preserve everything they did not ask to change — same facts, same structure, same length unless they asked otherwise.
+Grounding rules still apply: do not invent experience, skills, metrics or companies while revising.
+
+CURRENT DRAFT:
+${(previousLetter ?? '').trim().slice(0, 4000)}
+
+CANDIDATE'S REQUESTED CHANGES:
+${trimmedFeedback.slice(0, 2000)}`
+    : `Write an authentic, highly persuasive, customized cover letter for the candidate applying for the target position.`;
+
   const prompt = `You are an expert career advisor and executive cover letter writer.
-Write an authentic, highly persuasive, customized cover letter for the candidate applying for the target position.
+${taskBlock}
+
+${HUMAN_VOICE_RULES}
 
 CRITICAL INSTRUCTION - GROUNDING & TRUTHFULNESS:
 You MUST NOT invent, exaggerate, or assume any experience, skills, projects, certifications, achievements, companies, dates, or degrees that are not explicitly documented in the provided resume data.
@@ -76,10 +111,10 @@ TONE & STYLE:
 Tone: ${tone}
 Style: Contemporary, concise, compelling, professional.
 Structure:
-1. Salutation (e.g. "Dear Hiring Manager," or "Dear [Company] Hiring Team,")
-2. Engaging opening: State the target role, why the candidate is drawn to the company, and core alignment.
+1. Salutation (e.g. "Dear Hiring Manager," or "Dear hiring team,")
+2. Opening: State the target role in one plain sentence and why this specific work fits the candidate's background.
 3. Core body paragraphs (1-2 paragraphs): Connect the candidate's verified track record, concrete skills, and accomplishments directly to the key needs of the job description.
-4. Closing paragraph: Reiterate value proposition, express enthusiasm for discussion, and offer a professional call-to-action.
+4. Closing paragraph: Reiterate value in one sentence and offer a plain call-to-action (a conversation), without gushing.
 5. Sign-off: "Sincerely," followed by candidate's name and contact info.
 
 Output ONLY the final cover letter text without additional preamble or meta commentary.`;
@@ -109,22 +144,21 @@ Output ONLY the final cover letter text without additional preamble or meta comm
     logger.warn({ err }, 'AI Cover letter generation failed, falling back to deterministic template');
   }
 
-  // High quality deterministic fallback if AI provider is temporarily unavailable
+  // Plain-spoken deterministic fallback if the AI provider is unavailable.
   const candidate = candidateName || 'Candidate';
   const role = jobTitle || 'the advertised position';
-  const company = companyName || 'your organization';
 
-  const skillParagraph = skillsList
-    ? `My professional background has enabled me to develop strong competencies in ${skillsList}, which directly correspond with the responsibilities outlined in your job description.`
-    : `My technical background and hands-on experience have prepared me to deliver immediate value to your team.`;
+  const skillSentence = skillsList
+    ? `My work has centered on ${skillsList}, which maps directly onto what this role requires.`
+    : `My hands-on background has prepared me to contribute to your team quickly.`;
 
-  return `Dear Hiring Team at ${company},
+  return `Dear Hiring Manager,
 
-I am writing to express my strong interest in the ${role} opportunity at ${company}. With a proven track record of delivering impactful results and a commitment to technical excellence, I am confident in my ability to make a meaningful contribution to your organization.
+I am applying for the ${role}. ${skillSentence}
 
-${skillParagraph} Throughout my career, I have focused on solving complex challenges, optimizing workflows, and collaborating effectively across teams to achieve strategic goals. I am particularly excited about ${company}'s mission and would welcome the opportunity to bring my dedication and experience to your projects.
+In my recent work I have focused on shipping reliable software, cutting through ambiguity, and working closely with the people around me to get things done well. I pay attention to the details that affect users and I follow through on what I commit to.
 
-Thank you for your time and consideration. I welcome the opportunity to discuss how my qualifications align with your team's objectives in greater detail.
+I would welcome the chance to talk about how I can help your team. Thank you for your consideration.
 
 Sincerely,
 
