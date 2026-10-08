@@ -1,141 +1,68 @@
-import React, { useRef } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { Search, GitCompare, Lightbulb, TrendingUp, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { Reveal } from '@/components/landing/Reveal';
 
-const journeySteps = [
-  {
-    id: 'understand',
-    label: 'Understand',
-    icon: Search,
-    description: "See what's in your resume — skills, experience, and gaps at a glance.",
-  },
-  {
-    id: 'match',
-    label: 'Match',
-    icon: GitCompare,
-    description: 'Compare your resume against a specific job description in seconds.',
-  },
-  {
-    id: 'improve',
-    label: 'Improve',
-    icon: Lightbulb,
-    description: 'Get clear, actionable suggestions — not vague advice.',
-  },
-  {
-    id: 'optimize',
-    label: 'Optimize',
-    icon: TrendingUp,
-    description: 'Refine your resume for every opportunity you target.',
-  },
-];
-
-function JourneyCard({
-  step,
-  index,
-  isLast,
-}: {
-  step: (typeof journeySteps)[0];
-  index: number;
-  isLast: boolean;
-}) {
-  const Icon = step.icon;
-  return (
-    <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-start gap-4 flex-1 min-w-0 relative">
-      {/* Card */}
-      <div className="w-full bg-white border border-[#E4E2DC] rounded-2xl p-5 hover:border-[#16A36A]/40 hover:shadow-ecv-card-hover transition-all duration-200 group">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-[#F7F6F2] border border-[#E4E2DC] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E3F6ED] group-hover:border-[#B2EACF] transition-colors">
-            <Icon className="h-5 w-5 text-[#626262] group-hover:text-[#16A36A] transition-colors" />
-          </div>
-          <div className="pt-0.5 flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold tracking-widest text-[#C9C6BE] uppercase">
-                0{index + 1}
-              </span>
-            </div>
-            <h3 className="text-[15px] font-semibold text-[#171717] leading-snug">{step.label}</h3>
-            <p className="mt-1 text-[13px] text-[#626262] leading-relaxed">{step.description}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Arrow connector between cards (desktop) */}
-      {!isLast && (
-        <div className="hidden lg:flex items-center justify-center h-5 w-full mt-1" aria-hidden="true">
-          <div className="w-px h-5 bg-[#E4E2DC]" />
-        </div>
-      )}
-      {!isLast && (
-        <ArrowRight
-          className="hidden sm:block lg:hidden flex-shrink-0 h-4 w-4 text-[#C9C6BE] mx-1"
-          aria-hidden="true"
-        />
-      )}
-    </div>
-  );
-}
+const TRY_CHIPS = ['Analyze keyword match', 'Review bullet verbs', 'Draft interview talking points'];
 
 export function CoreJourneySection() {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-  const prefersReduced = useReducedMotion();
-
   return (
-    <section
-      id="about"
-      ref={ref}
-      className="py-20 md:py-28 bg-[#F7F6F2]"
-      aria-labelledby="value-prop-heading"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0, y: 18 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.55 }}
-          className="max-w-2xl"
-        >
-          <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#626262]">
-            How It Works
+    <section id="ai-coach" className="bg-[#0D0D20]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
+        <Reveal>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#6D28D9]/20 border border-[#6D28D9]/30 px-3 py-1 text-[11px] font-bold text-purple-300 transition-colors motion-safe:hover:bg-[#6D28D9]/30 motion-safe:hover:border-[#6D28D9]/50">
+            <span className="text-[10px]">✦</span> Adaptive Career Intelligence
           </span>
-          <h2
-            id="value-prop-heading"
-            className="mt-3 text-[2rem] sm:text-[2.5rem] font-bold text-[#171717] tracking-[-0.02em] leading-tight"
-          >
-            Know Where Your<br />Resume Stands.
+          <h2 className="mt-4 text-2xl md:text-[32px] font-extrabold tracking-tight leading-tight text-white max-w-md">
+            Your Resume, With an AI Coach Beside You.
           </h2>
-          <p className="mt-4 text-[15px] text-[#626262] leading-relaxed max-w-xl">
-            A polished resume can still miss important job requirements. ElevateCV shows how your resume fits the role you want, so you know what is strong, what is missing, and what to improve.
+          <p className="mt-3 text-[13.5px] leading-relaxed text-slate-400 max-w-xl">
+            Ask questions about your resume, your target role, missing skills, bullet points,
+            keywords, and areas worth improving.
           </p>
-        </motion.div>
+        </Reveal>
 
-        {/* Journey cards — vertical on mobile, 2-col on md, 4-col on lg */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {journeySteps.map((step, i) => (
-            <motion.div
-              key={step.id}
-              initial={prefersReduced ? false : { opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-            >
-              <JourneyCard step={step} index={i} isLast={i === journeySteps.length - 1} />
-            </motion.div>
-          ))}
+        <Reveal delay={140}>
+        <div className="mt-8 max-w-2xl rounded-2xl bg-[#16162B] border border-white/5 p-4 sm:p-5 transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:border-[#6D28D9]/40 motion-safe:hover:shadow-[0_20px_60px_rgba(109,40,217,0.25)]">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 shrink-0 rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">
+              You
+            </span>
+            <p className="rounded-xl rounded-tl-sm bg-white/10 px-3.5 py-2.5 text-[13px] text-slate-100">
+              How can I improve my project section for this job?
+            </p>
+          </div>
+
+          <div className="mt-3 flex items-start gap-2.5">
+            <div className="flex-1 rounded-xl bg-[#1E1E38] border border-[#6D28D9]/25 p-3.5">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-purple-300 uppercase">
+                <span>✦</span> AI Resume Coach
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-slate-200">
+                Your project section demonstrates relevant technical experience. Strengthen it by
+                emphasizing{' '}
+                <span className="text-purple-300 font-medium">the technologies you used</span>,{' '}
+                <span className="text-purple-300 font-medium">the problem you solved</span>, and{' '}
+                <span className="text-purple-300 font-medium">the measurable outcome</span> — using
+                only details already present in your resume.
+              </p>
+            </div>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6D28D9] text-white text-sm">
+              →
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] text-slate-500">Try asking:</span>
+            {TRY_CHIPS.map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-[11px] font-medium text-slate-300 transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-[#6D28D9]/50 motion-safe:hover:bg-[#6D28D9]/20 motion-safe:hover:text-white cursor-default"
+              >
+                &ldquo;{chip}&rdquo;
+              </span>
+            ))}
+          </div>
         </div>
-
-        {/* Core journey tagline */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-10 flex items-center gap-3"
-        >
-          <div className="h-px flex-1 bg-[#E4E2DC]" />
-          <span className="text-[12px] font-semibold text-[#909090] whitespace-nowrap tracking-wide">
-            Understand → Match → Improve → Optimize
-          </span>
-          <div className="h-px flex-1 bg-[#E4E2DC]" />
-        </motion.div>
+        </Reveal>
       </div>
     </section>
   );

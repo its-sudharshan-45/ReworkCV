@@ -15,8 +15,13 @@ export function mapAuthError(error: AuthError | null): string {
       return 'Password must be at least 8 characters.';
     case 'Unable to validate email address: invalid format':
       return 'Enter a valid email address.';
+    case 'Email not confirmed':
+      return 'Please confirm your email first — check your inbox for the confirmation link.';
+    case 'For security purposes, you can only request this once every 60 seconds':
+      return 'Please wait a minute before requesting another reset email.';
     default:
-      return error.message;
+      // Never surface raw provider internals; fall back to a safe message.
+      return 'Something went wrong. Please try again.';
   }
 }
 

@@ -10,11 +10,10 @@ const HomePage = lazy(() => import('@/pages/Home').then((m) => ({ default: m.Hom
 const LoginPage = lazy(() => import('@/pages/Login').then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('@/pages/Signup').then((m) => ({ default: m.SignupPage })));
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallback').then((m) => ({ default: m.AuthCallbackPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPassword').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPassword').then((m) => ({ default: m.ResetPasswordPage })));
 const ResumeAnalysisPage = lazy(() => import('@/pages/ResumeAnalysis').then((m) => ({ default: m.ResumeAnalysisPage })));
 const ReportPage = lazy(() => import('@/pages/Report').then((m) => ({ default: m.ReportPage })));
-const HistoryPage = lazy(() => import('@/pages/History').then((m) => ({ default: m.HistoryPage })));
-const CoverLettersPage = lazy(() => import('@/pages/CoverLetters').then((m) => ({ default: m.CoverLettersPage })));
-const SettingsPage = lazy(() => import('@/pages/Settings').then((m) => ({ default: m.SettingsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m.NotFoundPage })));
 
 function RouteFallback() {
@@ -38,27 +37,33 @@ export function App() {
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             </Route>
+
+            {/* Password reset must stay reachable with a recovery session,
+                which counts as authenticated — keep it outside PublicOnlyRoute. */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* OAuth Callback */}
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-            {/* Protected Routes */}
+            {/* Protected Routes — ReworkCV has 3 pages:
+                main analysis, report, and in-report cover letters */}
             <Route element={<ProtectedRoute />}>
               <Route path="/analysis" element={<ResumeAnalysisPage />} />
               <Route path="/resume/report/:resumeId/:analysisId" element={<ReportPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/cover-letters" element={<CoverLettersPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
 
-              {/* Legacy / Convenience Redirects */}
+              {/* Legacy / Removed-area Redirects */}
               <Route path="/dashboard" element={<Navigate to="/analysis" replace />} />
-              <Route path="/profile" element={<Navigate to="/settings" replace />} />
+              <Route path="/history" element={<Navigate to="/analysis" replace />} />
+              <Route path="/cover-letters" element={<Navigate to="/analysis" replace />} />
+              <Route path="/settings" element={<Navigate to="/analysis" replace />} />
+              <Route path="/profile" element={<Navigate to="/analysis" replace />} />
               <Route path="/profile/resumes" element={<Navigate to="/analysis" replace />} />
               <Route path="/resume" element={<Navigate to="/analysis" replace />} />
               <Route path="/resume/*" element={<Navigate to="/analysis" replace />} />
               <Route path="/resume-builder" element={<Navigate to="/analysis" replace />} />
-              <Route path="/saved" element={<Navigate to="/history" replace />} />
+              <Route path="/saved" element={<Navigate to="/analysis" replace />} />
               <Route path="/notifications" element={<Navigate to="/analysis" replace />} />
             </Route>
 

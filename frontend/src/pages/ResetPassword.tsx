@@ -1,11 +1,11 @@
 import React from 'react';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
-import { SignupForm } from '@/features/auth/components/SignupForm';
+import { ResetPasswordForm } from '@/features/auth/components/ResetPasswordForm';
 
-export function SignupPage() {
+export function ResetPasswordPage() {
   return (
     <AuthLayout>
-      <SignupForm />
+      <ResetPasswordForm />
     </AuthLayout>
   );
 }

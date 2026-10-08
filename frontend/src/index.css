@@ -35,6 +35,20 @@
   }
 }
 
+/* Auth form error shake (150–300ms, disabled under reduced motion) */
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes auth-shake {
+    0%, 100% { transform: translateX(0); }
+  }
+}
+
 /* Custom subtle grid background */
 .bg-grid-pattern {
   background-size: 32px 32px;

@@ -1,16 +1,13 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FormEvent, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormMessage } from '@/components/ui/form-message';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ArrowRight } from 'lucide-react';
+import { AUTH_ICONS, AuthField, AuthFormAlert, AuthSubmitButton, PasswordField } from '@/features/auth/components/AuthFormControls';
 import { AUTH_ROUTES } from '@/features/auth/constants';
 import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { OAuthDivider } from '@/features/auth/components/OAuthDivider';
 import { loginSchema, type LoginFormValues } from '@/features/auth/schemas';
 import { getFieldErrors, mapAuthError } from '@/features/auth/utils';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, setRememberMe } from '@/lib/supabase/client';
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -18,11 +15,16 @@ export function LoginForm() {
 
   // Surface OAuth errors forwarded back via the ?error= query param.
   const oauthError = searchParams.get('error');
+  const registered = searchParams.get('registered');
   const initialFormError = oauthError
     ? 'Could not sign in with Google. Please try again.'
     : null;
 
-  const [values, setValues] = useState<LoginFormValues>({ email: '', password: '' });
+  const [values, setValues] = useState<LoginFormValues & { remember: boolean }>({
+    email: '',
+    password: '',
+    remember: true,
+  });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof LoginFormValues, string>>>(
     {},
   );
@@ -31,9 +33,10 @@ export function LoginForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFormError(null);
 
-    const parsed = loginSchema.safeParse(values);
+    const parsed = loginSchema.safeParse({ email: values.email, password: values.password });
 
     if (!parsed.success) {
       setFieldErrors(getFieldErrors(parsed.error));
@@ -44,6 +47,8 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
+      // Apply the session persistence choice before signing in.
+      setRememberMe(values.remember);
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email: parsed.data.email,
@@ -63,71 +68,105 @@ export function LoginForm() {
 
       navigate(destination, { replace: true });
     } catch {
-      setFormError('Unable to log in. Please try again.');
+      setFormError('Unable to sign in. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Log in</CardTitle>
-        <CardDescription>Access your career profile and preparation tools.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={values.email}
-              aria-invalid={Boolean(fieldErrors.email)}
-              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-              onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
-              disabled={isSubmitting}
-              required
-            />
-            <FormMessage id="email-error" message={fieldErrors.email} />
-          </div>
+    <div>
+      <h1 className="text-center text-[24px] font-bold tracking-tight text-[#17151F]">
+        Welcome Back
+      </h1>
+      <p className="mx-auto mt-1.5 max-w-[280px] text-center text-[13px] leading-relaxed text-slate-500">
+        Log in to elevate, score, and land interviews with your tailored resume.
+      </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={values.password}
-              aria-invalid={Boolean(fieldErrors.password)}
-              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-              onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
-              disabled={isSubmitting}
-              required
-            />
-            <FormMessage id="password-error" message={fieldErrors.password} />
-          </div>
+      {registered && !formError && (
+        <div className="mt-4">
+          <AuthFormAlert
+            kind="success"
+            message="Account created. Check your email to confirm it, then sign in."
+          />
+        </div>
+      )}
 
-          <FormMessage message={formError ?? undefined} />
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Logging in…' : 'Log in'}
-          </Button>
-        </form>
-
-        <OAuthDivider />
+      <div className="mt-5">
         <GoogleAuthButton redirectTo={searchParams.get('next') ?? undefined} />
+      </div>
 
-        <p className="mt-4 text-sm text-muted-foreground">
-          Need an account?{' '}
-          <Link to={AUTH_ROUTES.signup} className="font-medium text-primary underline-offset-4 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+      <OAuthDivider />
+
+      <form onSubmit={handleSubmit} className="mt-1 space-y-3.5" noValidate>
+        <AuthField
+          id="email"
+          label="Email Address"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="alex@careerflow.ai"
+          icon={AUTH_ICONS.email}
+          value={values.email}
+          error={fieldErrors.email}
+          errorId="email-error"
+          onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
+          disabled={isSubmitting}
+          required
+        />
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+              Password
+            </span>
+            <Link
+              to={AUTH_ROUTES.forgotPassword}
+              className="text-[12px] font-semibold text-[#17151F] underline-offset-4 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <PasswordField
+            id="password"
+            label="Password"
+            hideLabel
+            name="password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            value={values.password}
+            error={fieldErrors.password}
+            errorId="password-error"
+            onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
+            disabled={isSubmitting}
+            required
+          />
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-2 text-[12.5px] font-medium text-slate-600">
+          <input
+            type="checkbox"
+            checked={values.remember}
+            onChange={(event) => setValues((prev) => ({ ...prev, remember: event.target.checked }))}
+            disabled={isSubmitting}
+            className="h-4 w-4 rounded accent-[#C1359E]"
+          />
+          Remember me for 30 days
+        </label>
+
+        {formError && <AuthFormAlert kind="error" message={formError} />}
+
+        <AuthSubmitButton loading={isSubmitting} loadingLabel="Signing in…">
+          Log in to Dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </AuthSubmitButton>
+      </form>
+
+      <p className="mt-5 text-center text-[13px] text-slate-500">
+        Don&apos;t have an account?{' '}
+        <Link to={AUTH_ROUTES.signup} className="font-bold text-[#D61F9E] underline-offset-4 hover:underline">
+          Sign up for free
+        </Link>
+      </p>
+    </div>
   );
 }

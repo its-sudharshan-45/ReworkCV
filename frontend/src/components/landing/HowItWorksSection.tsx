@@ -1,140 +1,53 @@
-import React, { useRef } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { Upload, ScanLine, GitCompare, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Reveal } from '@/components/landing/Reveal';
 
-const steps = [
+const STEPS = [
   {
     number: '01',
-    label: 'Upload',
-    description: 'Add your existing resume securely. Supports PDF and common formats.',
-    icon: Upload,
-    detail: 'Drag & drop or browse',
+    title: 'RESUME REPORT',
+    description: 'Understand your resume with a clear, structured analysis across content, ATS compatibility, and role relevance.',
   },
   {
     number: '02',
-    label: 'Analyze',
-    description: 'Get structured insights from your resume — skills, experience, and education extracted automatically.',
-    icon: ScanLine,
-    detail: 'Instant AI analysis',
+    title: 'AI RESUME COACH',
+    description: 'Ask questions and get personalized guidance based on your resume and target job.',
   },
   {
     number: '03',
-    label: 'Match',
-    description: 'Add a job description to check ATS alignment and skill match across every requirement.',
-    icon: GitCompare,
-    detail: 'Real ATS scoring',
-  },
-  {
-    number: '04',
-    label: 'Improve',
-    description: 'Apply clear, AI-generated recommendations and create a stronger, job-targeted resume.',
-    icon: Sparkles,
-    detail: 'Actionable suggestions',
+    title: 'COVER LETTER',
+    description: 'Create a tailored cover letter built around the same application context without starting from a blank page.',
   },
 ];
 
 export function HowItWorksSection() {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-  const prefersReduced = useReducedMotion();
-
   return (
-    <section
-      id="how-it-works"
-      ref={ref}
-      className="py-20 md:py-28 bg-[#F7F6F2]"
-      aria-labelledby="how-it-works-heading"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0, y: 18 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.55 }}
-          className="text-center max-w-xl mx-auto mb-14"
-        >
-          <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#626262]">
-            Workflow
-          </span>
-          <h2
-            id="how-it-works-heading"
-            className="mt-3 text-[2rem] sm:text-[2.5rem] font-bold text-[#171717] tracking-[-0.02em] leading-tight"
-          >
-            Simple From Start<br className="hidden sm:block" /> to Finish.
+    <section id="how-it-works" className="bg-[#FAFAFC] border-y border-slate-100">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
+        <Reveal>
+          <h2 className="text-2xl md:text-[28px] font-extrabold tracking-tight text-[#1E1235]">
+            Understand. Improve. Apply.
           </h2>
-          <p className="mt-4 text-[15px] text-[#626262] leading-relaxed">
-            Four clear steps from resume upload to a stronger, more targeted application.
+          <p className="mt-2 text-[13.5px] text-slate-500">
+            Everything you need to turn a resume into a stronger job application.
           </p>
-        </motion.div>
+        </Reveal>
 
-        {/* Steps */}
-        <div className="relative">
-          {/* Horizontal connector line (desktop only) */}
-          <div
-            className="absolute top-[52px] left-0 right-0 hidden lg:block pointer-events-none"
-            aria-hidden="true"
-          >
-            <div className="max-w-4xl mx-auto px-12">
-              <div className="h-px bg-[#E4E2DC]" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {steps.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <motion.div
-                  key={step.number}
-                  initial={prefersReduced ? false : { opacity: 0, y: 24 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: i * 0.12 }}
-                  className="flex flex-col items-start lg:items-center text-left lg:text-center"
-                >
-                  {/* Icon circle */}
-                  <div className="relative mb-5 flex-shrink-0">
-                    <div className="w-[52px] h-[52px] rounded-xl bg-white border border-[#E4E2DC] flex items-center justify-center shadow-ecv-subtle z-10 relative">
-                      <Icon className="h-5 w-5 text-[#171717]" />
-                    </div>
-                    {/* Step number badge */}
-                    <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#171717] flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-white leading-none">{i + 1}</span>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1">
-                    <h3 className="text-[17px] font-bold text-[#171717] mb-2">{step.label}</h3>
-                    <p className="text-[13px] text-[#626262] leading-relaxed mb-3">{step.description}</p>
-                    <span className="inline-flex items-center text-[11px] font-semibold text-[#16A36A] bg-[#E3F6ED] border border-[#B2EACF] px-2.5 py-1 rounded-full">
-                      {step.detail}
-                    </span>
-                  </div>
-
-                  {/* Vertical connector (mobile only) */}
-                  {i < steps.length - 1 && (
-                    <div className="sm:hidden mt-6 w-px h-6 bg-[#E4E2DC] mx-auto" aria-hidden="true" />
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+          {STEPS.map((step, i) => (
+            <Reveal key={step.number} delay={i * 120} className="group relative">
+              <div className="flex items-center gap-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-[13px] font-bold text-slate-500 transition-all duration-300 motion-safe:group-hover:-translate-y-1 motion-safe:group-hover:border-[#6D28D9]/40 motion-safe:group-hover:text-[#6D28D9] motion-safe:group-hover:shadow-[0_10px_25px_rgba(109,40,217,0.18)]">
+                  {step.number}
+                </span>
+                {i < STEPS.length - 1 && (
+                  <span className="hidden md:block h-px flex-1 border-t border-dashed border-slate-300" aria-hidden="true" />
+                )}
+              </div>
+              <p className="mt-4 text-[12px] font-bold tracking-wide text-slate-900 transition-colors motion-safe:group-hover:text-[#6D28D9]">{step.title}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500 max-w-xs">{step.description}</p>
+            </Reveal>
+          ))}
         </div>
-
-        {/* Bottom CTA nudge */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-14 text-center"
-        >
-          <a
-            href="#features"
-            className="inline-flex items-center gap-2 text-[13px] font-medium text-[#626262] hover:text-[#171717] transition-colors"
-          >
-            See all features
-            <span className="text-[#16A36A]">→</span>
-          </a>
-        </motion.div>
       </div>
     </section>
   );

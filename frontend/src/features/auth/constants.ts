@@ -1,15 +1,15 @@
 export const AUTH_ROUTES = {
   login: '/login',
   signup: '/signup',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   dashboard: '/analysis',
-  profile: '/settings',
+  profile: '/analysis',
 } as const;
 
 export const PROTECTED_ROUTE_PREFIXES = [
   '/analysis',
-  '/history',
-  '/cover-letters',
-  '/settings',
+  '/resume',
 ] as const;
 
 export const PUBLIC_AUTH_ROUTES = [AUTH_ROUTES.login, AUTH_ROUTES.signup] as const;

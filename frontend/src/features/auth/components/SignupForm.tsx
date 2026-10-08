@@ -1,10 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { FormEvent, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormMessage } from '@/components/ui/form-message';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ArrowRight } from 'lucide-react';
+import { AUTH_ICONS, AuthField, AuthFormAlert, AuthSubmitButton, PasswordField } from '@/features/auth/components/AuthFormControls';
 import { AUTH_ROUTES } from '@/features/auth/constants';
 import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton';
 import { OAuthDivider } from '@/features/auth/components/OAuthDivider';
@@ -13,6 +10,7 @@ import { getFieldErrors, mapAuthError } from '@/features/auth/utils';
 import { createClient } from '@/lib/supabase/client';
 
 const initialValues: SignupFormValues = {
+  fullName: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -29,6 +27,7 @@ export function SignupForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFormError(null);
 
     const parsed = signupSchema.safeParse(values);
@@ -46,6 +45,9 @@ export function SignupForm() {
       const { data, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
+        options: {
+          data: { full_name: parsed.data.fullName },
+        },
       });
 
       if (error) {
@@ -68,88 +70,96 @@ export function SignupForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Create your account</CardTitle>
-        <CardDescription>Start building your career readiness profile.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={values.email}
-              aria-invalid={Boolean(fieldErrors.email)}
-              aria-describedby={fieldErrors.email ? 'signup-email-error' : undefined}
-              onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
-              disabled={isSubmitting}
-              required
-            />
-            <FormMessage id="signup-email-error" message={fieldErrors.email} />
-          </div>
+    <div>
+      <h1 className="text-center text-[24px] font-bold tracking-tight text-[#17151F]">
+        Create your account
+      </h1>
+      <p className="mx-auto mt-1.5 max-w-[290px] text-center text-[13px] leading-relaxed text-slate-500">
+        Join ReworkCV to elevate, score, and land interviews with your tailored resume.
+      </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              value={values.password}
-              aria-invalid={Boolean(fieldErrors.password)}
-              aria-describedby={fieldErrors.password ? 'signup-password-error' : undefined}
-              onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
-              disabled={isSubmitting}
-              required
-            />
-            <FormMessage id="signup-password-error" message={fieldErrors.password} />
-          </div>
+      <div className="mt-4">
+        <GoogleAuthButton label="Continue with Google" />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              value={values.confirmPassword}
-              aria-invalid={Boolean(fieldErrors.confirmPassword)}
-              aria-describedby={
-                fieldErrors.confirmPassword ? 'signup-confirm-password-error' : undefined
-              }
-              onChange={(event) =>
-                setValues((prev) => ({ ...prev, confirmPassword: event.target.value }))
-              }
-              disabled={isSubmitting}
-              required
-            />
-            <FormMessage
-              id="signup-confirm-password-error"
-              message={fieldErrors.confirmPassword}
-            />
-          </div>
+      <OAuthDivider />
 
-          <FormMessage message={formError ?? undefined} />
+      <form onSubmit={handleSubmit} className="mt-1 space-y-3.5" noValidate>
+        <AuthField
+          id="fullName"
+          label="Full Name"
+          name="fullName"
+          type="text"
+          autoComplete="name"
+          placeholder="Alex Rivera"
+          icon={AUTH_ICONS.name}
+          value={values.fullName}
+          error={fieldErrors.fullName}
+          errorId="signup-fullname-error"
+          onChange={(event) => setValues((prev) => ({ ...prev, fullName: event.target.value }))}
+          disabled={isSubmitting}
+          required
+        />
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account…' : 'Sign up'}
-          </Button>
-        </form>
+        <AuthField
+          id="email"
+          label="Email Address"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="alex@careerflow.ai"
+          icon={AUTH_ICONS.email}
+          value={values.email}
+          error={fieldErrors.email}
+          errorId="signup-email-error"
+          onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
+          disabled={isSubmitting}
+          required
+        />
 
-        <OAuthDivider />
-        <GoogleAuthButton label="Sign up with Google" />
+        <PasswordField
+          id="password"
+          label="Password"
+          name="password"
+          autoComplete="new-password"
+          placeholder="At least 8 characters"
+          value={values.password}
+          error={fieldErrors.password}
+          errorId="signup-password-error"
+          onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
+          disabled={isSubmitting}
+          required
+        />
 
-        <p className="mt-4 text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to={AUTH_ROUTES.login} className="font-medium text-primary underline-offset-4 hover:underline">
-            Log in
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+        <PasswordField
+          id="confirmPassword"
+          label="Confirm Password"
+          name="confirmPassword"
+          autoComplete="new-password"
+          placeholder="Repeat your password"
+          value={values.confirmPassword}
+          error={fieldErrors.confirmPassword}
+          errorId="signup-confirm-password-error"
+          onChange={(event) =>
+            setValues((prev) => ({ ...prev, confirmPassword: event.target.value }))
+          }
+          disabled={isSubmitting}
+          required
+        />
+
+        {formError && <AuthFormAlert kind="error" message={formError} />}
+
+        <AuthSubmitButton loading={isSubmitting} loadingLabel="Creating account…">
+          Create Account <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </AuthSubmitButton>
+      </form>
+
+      <p className="mt-5 text-center text-[13px] text-slate-500">
+        Already have an account?{' '}
+        <Link to={AUTH_ROUTES.login} className="font-bold text-[#D61F9E] underline-offset-4 hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

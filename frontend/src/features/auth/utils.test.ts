@@ -27,6 +27,7 @@ describe('auth schemas', () => {
 
   it('rejects signup when passwords do not match', () => {
     const result = signupSchema.safeParse({
+      fullName: 'Jane Doe',
       email: 'jane@example.com',
       password: 'password123',
       confirmPassword: 'password456',
@@ -36,6 +37,20 @@ describe('auth schemas', () => {
     if (!result.success) {
       const errors = getFieldErrors(result.error);
       expect(errors.confirmPassword).toBe('Passwords do not match');
+    }
+  });
+
+  it('rejects signup without a full name', () => {
+    const result = signupSchema.safeParse({
+      fullName: '',
+      email: 'jane@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(getFieldErrors(result.error).fullName).toBe('Enter your full name');
     }
   });
 });

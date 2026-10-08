@@ -93,7 +93,7 @@ export function GoogleAuthButton({
         id="google-auth-btn"
         type="button"
         variant="outline"
-        className="w-full"
+        className="h-[50px] w-full rounded-full border-slate-200 bg-white text-[14.5px] font-semibold text-[#17151F] transition-colors duration-200 hover:bg-slate-50 hover:text-[#17151F]"
         onClick={handleClick}
         disabled={isLoading}
         aria-busy={isLoading}
