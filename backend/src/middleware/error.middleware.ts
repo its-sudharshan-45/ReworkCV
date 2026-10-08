@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { AppError, isAppError } from '../utils/errors.js';
 
@@ -12,7 +13,7 @@ export interface ApiErrorResponse {
   };
 }
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = env.NODE_ENV === 'production';
 
 export function notFoundHandler(_req: Request, res: Response): void {
   const response: ApiErrorResponse = {
