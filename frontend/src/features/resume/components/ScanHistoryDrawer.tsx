@@ -1,7 +1,6 @@
 import React from 'react';
-import { X, Trash2, FileText, ArrowRight, ExternalLink } from 'lucide-react';
+import { X, Trash2, FileText } from 'lucide-react';
 import type { ResumeListItem } from '@/features/resume/types/resume';
-import { useNavigate } from 'react-router-dom';
 
 interface ScanHistoryDrawerProps {
   isOpen: boolean;
@@ -22,8 +21,6 @@ export function ScanHistoryDrawer({
   onDeleteResume,
   deletingId,
 }: ScanHistoryDrawerProps) {
-  const navigate = useNavigate();
-
   if (!isOpen) return null;
 
   return (
@@ -137,18 +134,7 @@ export function ScanHistoryDrawer({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              navigate('/history');
-            }}
-            className="text-xs font-semibold text-[#7C3AED] hover:underline flex items-center gap-1"
-          >
-            <span>Open Full History Page</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
+        <div className="p-4 border-t border-slate-100 flex items-center justify-end bg-slate-50/50">
           <button
             type="button"
             onClick={onClose}

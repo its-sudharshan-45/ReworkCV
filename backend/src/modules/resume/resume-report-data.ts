@@ -434,7 +434,10 @@ export function buildReportData(input: BuildReportInput): ReportData {
 // Validation
 // ---------------------------------------------------------------------------
 
-const FORBIDDEN_TOKENS = ['undefined', 'null', 'NaN', '[object Object]', '&amp;'];
+const FORBIDDEN_TOKENS = ['undefined', 'NaN', '[object Object]', '&amp;'];
+// NOTE: the JSON literal `null` is a legitimate value for optional fields and
+// must NOT be treated as a placeholder — scanning for it broke PDF export for
+// every report containing a null field.
 
 export function scanForForbiddenValues(report: ReportData): string[] {
   const found: string[] = [];

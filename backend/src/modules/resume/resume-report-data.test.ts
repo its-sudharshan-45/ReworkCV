@@ -7,6 +7,7 @@ import {
   scanForForbiddenValues,
   validateReportScores,
 } from './resume-report-data.js';
+import { validateReportPdfData } from './resume-report-export.service.js';
 import type { JobMatchAnalysis } from '../../ai/job/job-types.js';
 import type { ResumeDetailResponse } from './resume.types.js';
 
@@ -120,6 +121,16 @@ describe('REPORT_DATA builder', () => {
     expect(report.overview.strengths).toBeUndefined();
     expect(report.overview.improvements).toBeUndefined();
     expect(report.skills).toBeUndefined();
+  });
+
+  it('does not flag JSON null values as forbidden (PDF export must not break)', () => {
+    const resume = makeResume();
+    const report = buildReportData({ resume, analysis: null });
+    // Optional fields may legitimately be null — not placeholders.
+    const withNulls = { ...report, content: null, skills: null };
+    expect(JSON.stringify(withNulls)).toContain('null');
+    expect(scanForForbiddenValues(withNulls)).toEqual([]);
+    expect(validateReportPdfData(withNulls, null).valid).toBe(true);
   });
 
   it('handles long content without breaking structure', () => {

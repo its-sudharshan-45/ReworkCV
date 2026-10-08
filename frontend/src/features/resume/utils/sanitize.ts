@@ -30,12 +30,16 @@ export function decodeHtmlEntities(input: string): string {
 export function sanitizeText(input: unknown): string {
   if (typeof input !== 'string') return '';
   let out = decodeHtmlEntities(input);
+  // Intentional: strip control/invisible chars from untrusted resume + AI text.
+  // eslint-disable-next-line no-control-regex
   out = out.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
   out = out
     .replace(/[""«»]/g, '"')
     .replace(/[''‚‛]/g, "'")
     .replace(/[––—―]/g, '-')
     .replace(/…/g, '...');
+  // Intentional: collapse irregular whitespace (incl. NBSP) from pasted resumes.
+  // eslint-disable-next-line no-irregular-whitespace
   out = out.replace(/[ \t ]+/g, ' ');
   out = out.replace(/\n{3,}/g, '\n\n');
   return out.trim();

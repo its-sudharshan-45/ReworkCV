@@ -69,36 +69,99 @@ export async function getJobAnalysis(resumeId: string, analysisId: string) {
   );
 }
 
-export async function downloadResumeReportPdf(resumeId: string, fallbackName = 'Analysis_Report.pdf') {
+export async function downloadResumeReportPdf(
+  resumeId: string,
+  fallbackName = 'Analysis_Report.pdf',
+  analysisId?: string | null,
+) {
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
-  const response = await fetch(`${clientEnv.VITE_API_URL}/resumes/${resumeId}/report/pdf`, {
-    headers: {
-      Authorization: `Bearer ${session?.access_token || ''}`,
-    },
-  });
+  if (!session?.access_token) {
+    throw new Error('Your session has expired. Please sign in again, then retry the download.');
+  }
+
+  let response: Response;
+  try {
+    const url = analysisId
+      ? `${clientEnv.VITE_API_URL}/resumes/${resumeId}/report/pdf?analysisId=${encodeURIComponent(analysisId)}`
+      : `${clientEnv.VITE_API_URL}/resumes/${resumeId}/report/pdf`;
+    response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+  } catch {
+    throw new Error('Could not reach the report server. Check your connection and try again.');
+  }
 
   if (!response.ok) {
-    throw new Error('Failed to download report PDF');
+    let message = 'Failed to download report PDF. Please try again.';
+    try {
+      const body = (await response.clone().json()) as {
+        error?: { message?: unknown };
+        message?: unknown;
+      };
+      const serverMessage =
+        typeof body?.error?.message === 'string' && body.error.message.trim()
+          ? body.error.message
+          : typeof body?.message === 'string' && body.message.trim()
+            ? body.message
+            : null;
+      if (serverMessage) message = serverMessage;
+    } catch {
+      // Non-JSON error body — keep the default message.
+    }
+    throw new Error(message);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType && !contentType.includes('application/pdf')) {
+    let message = 'The server did not return a PDF file. Please try again.';
+    try {
+      const body = (await response.clone().json()) as {
+        error?: { message?: unknown };
+      };
+      if (typeof body?.error?.message === 'string' && body.error.message.trim()) {
+        message = body.error.message;
+      }
+    } catch {
+      // Ignore parse errors.
+    }
+    throw new Error(message);
   }
 
   const disposition = response.headers.get('content-disposition');
   let filename = fallbackName;
   if (disposition) {
-    const match = disposition.match(/filename="?([^";]+)"?/i);
-    if (match?.[1]) filename = match[1].trim();
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const asciiMatch = disposition.match(/filename="?([^";]+)"?/i);
+    const raw = (utf8Match?.[1] ?? asciiMatch?.[1] ?? '').trim();
+    if (raw) {
+      try {
+        filename = decodeURIComponent(raw);
+      } catch {
+        filename = raw;
+      }
+    }
   }
 
   const blob = await response.blob();
+  if (blob.size === 0) {
+    throw new Error('The server returned an empty file. Please try again.');
+  }
+
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }, 150);
+
+  return filename;
 }

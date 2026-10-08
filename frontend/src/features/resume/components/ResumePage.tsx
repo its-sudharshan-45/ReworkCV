@@ -16,6 +16,7 @@ import type { ResumeListItem } from '@/features/resume/types/resume';
 import { ApiClientError } from '@/lib/api/client';
 import { StitchNavbar } from '@/features/resume/components/StitchNavbar';
 import { ScanHistoryDrawer } from '@/features/resume/components/ScanHistoryDrawer';
+import { confirmResumeDelete } from '@/features/resume/utils/confirm-delete';
 
 export function ResumePage() {
   const navigate = useNavigate();
@@ -30,6 +31,9 @@ export function ResumePage() {
   const [lastJobTitle, setLastJobTitle] = useState<string>('');
   const [analysisPhase, setAnalysisPhase] = useState<'uploading' | 'processing' | 'analyzing' | null>(null);
   const analysisInFlight = useRef(false);
+  const mountedRef = useRef(true);
+  // Render-safe mirror of `lastRequest` (refs must not be read during render).
+  const [hasLastRequest, setHasLastRequest] = useState(false);
   const lastRequest = useRef<
     | { kind: 'upload'; file: File; jobDescription: string; jobTitle?: string }
     | { kind: 'saved'; resumeId: string; jobDescription: string; jobTitle?: string }
@@ -42,8 +46,11 @@ export function ResumePage() {
 
     try {
       const data = await listResumes();
-      const enrichedResumes = await Promise.all(
-        (data.resumes || []).map(async (res) => {
+      const items = data.resumes || [];
+      // N+1 safeguard: resolve per-resume scores without failing the whole
+      // list when a single analysis lookup fails.
+      const settled = await Promise.allSettled(
+        items.map(async (res) => {
           try {
             const analysesData = await listJobAnalyses(res.id);
             if (analysesData.analyses && analysesData.analyses.length > 0) {
@@ -55,24 +62,49 @@ export function ResumePage() {
           return res;
         }),
       );
-      setResumes(enrichedResumes);
+      if (!mountedRef.current) return;
+      setResumes(
+        settled.map((r) => (r.status === 'fulfilled' ? r.value : null)).filter((r) => r !== null),
+      );
     } catch (loadError) {
+      if (!mountedRef.current) return;
       setError(
         loadError instanceof ApiClientError
           ? loadError.message
           : 'Unable to load resumes. Please verify you are logged in and try again.',
       );
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     void loadResumes();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [loadResumes]);
 
   function handleSelect(resumeId: string) {
     navigate(`/resume/report/${resumeId}/latest`);
+  }
+
+  /** Dev-only structured diagnostic log (never rendered; no PII beyond ids). */
+  function logAnalyzeDiagnostic(
+    stage: 'upload-analyze' | 'saved-analyze',
+    err: unknown,
+    context: { resumeId?: string; jobDescriptionLength: number; jobTitle?: string },
+  ) {
+    if (import.meta.env.DEV) {
+      console.error('[resume-analysis]', {
+        stage,
+        ...context,
+        status: err instanceof ApiClientError ? err.status : undefined,
+        code: err instanceof ApiClientError ? err.code : undefined,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   async function handleUploadAndAnalyze(file: File, jobDescription: string, jobTitle?: string) {
@@ -80,6 +112,7 @@ export function ResumePage() {
     if (analysisInFlight.current) return;
     analysisInFlight.current = true;
     lastRequest.current = { kind: 'upload', file, jobDescription, jobTitle };
+    setHasLastRequest(true);
     setIsUploading(true);
     setIsProcessing(false);
     setAnalysisPhase('uploading');
@@ -96,6 +129,11 @@ export function ResumePage() {
 
       setAnalysisPhase('analyzing');
       const jobMatchRes = await analyzeResumeForJob(processed.resume.id, jobDescription, jobTitle);
+      if (!jobMatchRes?.data || typeof jobMatchRes.data.matchScore !== 'number') {
+        throw new ApiClientError(500, {
+          error: { code: 'UNEXPECTED_RESPONSE', message: 'Analysis completed but returned an invalid report payload.' },
+        });
+      }
       const matchedScore = jobMatchRes.data.matchScore;
 
       setResumes((current) => [
@@ -106,6 +144,10 @@ export function ResumePage() {
       // Analysis complete — navigate to the dedicated report page.
       navigate(`/resume/report/${processed.resume.id}/${jobMatchRes.analysisId}`);
     } catch (uploadError) {
+      logAnalyzeDiagnostic('upload-analyze', uploadError, {
+        jobDescriptionLength: jobDescription.length,
+        jobTitle,
+      });
       setError(
         uploadError instanceof ApiClientError
           ? uploadError.message
@@ -127,6 +169,7 @@ export function ResumePage() {
     if (analysisInFlight.current) return;
     analysisInFlight.current = true;
     lastRequest.current = { kind: 'saved', resumeId, jobDescription, jobTitle };
+    setHasLastRequest(true);
     setIsProcessing(true);
     setAnalysisPhase('analyzing');
     setError(null);
@@ -134,6 +177,11 @@ export function ResumePage() {
 
     try {
       const jobMatchRes = await analyzeResumeForJob(resumeId, jobDescription, jobTitle);
+      if (!jobMatchRes?.data || typeof jobMatchRes.data.matchScore !== 'number') {
+        throw new ApiClientError(500, {
+          error: { code: 'UNEXPECTED_RESPONSE', message: 'Analysis completed but returned an invalid report payload.' },
+        });
+      }
       const matchedScore = jobMatchRes.data.matchScore;
 
       setResumes((current) =>
@@ -143,6 +191,11 @@ export function ResumePage() {
       // Analysis complete — navigate to the dedicated report page.
       navigate(`/resume/report/${resumeId}/${jobMatchRes.analysisId}`);
     } catch (analysisError) {
+      logAnalyzeDiagnostic('saved-analyze', analysisError, {
+        resumeId,
+        jobDescriptionLength: jobDescription.length,
+        jobTitle,
+      });
       setError(
         analysisError instanceof ApiClientError
           ? analysisError.message
@@ -166,7 +219,7 @@ export function ResumePage() {
   }
 
   async function handleDelete(resumeId: string) {
-    if (!confirm('Are you sure you want to delete this resume?')) return;
+    if (!confirmResumeDelete()) return;
     setDeletingResumeId(resumeId);
     setError(null);
 
@@ -233,7 +286,7 @@ export function ResumePage() {
             {error && (
               <div className="mb-4 space-y-2">
                 <FormMessage message={error} />
-                {lastRequest.current && !isBusy && (
+                {hasLastRequest && !isBusy && (
                   <button
                     type="button"
                     onClick={() => void handleRetryAnalysis()}

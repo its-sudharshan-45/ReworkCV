@@ -261,6 +261,8 @@ export interface AnalyzeJobResponse {
   success: boolean;
   data: JobMatchAnalysis;
   analysisId: string;
+  /** Non-fatal degradation notes from the backend (RAG/AI fallback). */
+  warnings?: string[];
 }
 
 export interface JobAnalysisDetail {
@@ -271,6 +273,7 @@ export interface JobAnalysisDetail {
   jobTitle: string | null;
   jobDescription: string;
   createdAt: string;
+  warnings?: string[];
 }
 
 export interface JobAnalysisListResponse {

@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Archive, ChevronDown, Settings, LogOut, FileText, CheckCircle2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Archive, ChevronDown, LogOut, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { LogoLockup } from '@/components/brand/Logo';
 
 interface StitchNavbarProps {
   onOpenHistory: () => void;
   userName?: string;
   userEmail?: string;
+  onNewScan?: () => void;
 }
 
-export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail: propUserEmail }: StitchNavbarProps) {
+export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail: propUserEmail, onNewScan }: StitchNavbarProps) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [resolvedUserName, setResolvedUserName] = useState<string>(propUserName || '');
@@ -67,17 +69,13 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
     <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-100 px-4 sm:px-8 py-3.5 flex items-center justify-between">
       {/* Left: Logo & Subtitle */}
       <div className="flex items-center gap-3">
-        {/* Logo Image */}
-        <img
-          src="/logo.png"
-          alt="ReworkCV Logo"
-          className="w-8 h-8 object-contain select-none"
-        />
-
-        {/* Brand Name */}
-        <span className="text-xl font-extrabold tracking-tight text-slate-900 select-none">
-          Rework<span className="text-[#7C3AED]">CV</span>
-        </span>
+        <Link
+          to="/"
+          aria-label="ReworkCV home"
+          className="rounded-lg transition-transform duration-300 motion-safe:hover:scale-[1.04] motion-safe:active:scale-[0.98]"
+        >
+          <LogoLockup markClassName="h-8 w-8 rounded-full" textClassName="text-xl font-extrabold select-none" />
+        </Link>
 
         {/* Divider */}
         <span className="h-4 w-px bg-slate-200 mx-1 hidden sm:inline-block" />
@@ -88,13 +86,23 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
         </span>
       </div>
 
-      {/* Right: Scan History & User Profile */}
-      <div className="flex items-center gap-4 sm:gap-6">
+      {/* Right: New Scan, Scan History & User Profile */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {onNewScan && (
+          <button
+            type="button"
+            onClick={onNewScan}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#16A36A] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#0E7A50]"
+          >
+            <span className="text-[14px] leading-none">+</span>
+            <span>New Scan</span>
+          </button>
+        )}
         {/* Scan History Button */}
         <button
           type="button"
           onClick={onOpenHistory}
-          className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-slate-700 hover:text-[#7C3AED] transition-colors cursor-pointer py-1.5 px-2 rounded-lg hover:bg-slate-50"
+          className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-slate-700 hover:text-[#16A36A] transition-colors cursor-pointer py-1.5 px-2 rounded-lg hover:bg-slate-50"
         >
           <Archive className="w-4 h-4 text-slate-500" />
           <span>Scan History</span>
@@ -108,7 +116,7 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
             className="flex items-center gap-2 cursor-pointer py-1 px-1.5 rounded-full hover:bg-slate-50 transition-colors"
           >
             {/* Avatar Circle */}
-            <div className="w-8 h-8 rounded-full bg-[#7C3AED] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+            <div className="w-8 h-8 rounded-full bg-[#16A36A] text-white flex items-center justify-center text-xs font-bold shadow-xs">
               {avatarInitial}
             </div>
 
@@ -137,34 +145,10 @@ export function StitchNavbar({ onOpenHistory, userName: propUserName, userEmail:
                   setShowProfileMenu(false);
                   onOpenHistory();
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-[#F3E8FF] hover:text-[#7C3AED] transition-colors text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-[#E3F6ED] hover:text-[#0E7A50] transition-colors text-left"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>My Saved Resumes</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProfileMenu(false);
-                  navigate('/cover-letters');
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-[#F3E8FF] hover:text-[#7C3AED] transition-colors text-left"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Cover Letters</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProfileMenu(false);
-                  navigate('/settings');
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 rounded-lg hover:bg-[#F3E8FF] hover:text-[#7C3AED] transition-colors text-left"
-              >
-                <Settings className="w-3.5 h-3.5" />
-                <span>Account Settings</span>
               </button>
 
               <div className="border-t border-slate-100 my-1" />

@@ -47,6 +47,8 @@ export interface AnalyzeJobResponse {
   success: true;
   data: import('../../ai/job/job-types.js').JobMatchAnalysis;
   analysisId: string;
+  /** Non-fatal degradation notes (RAG/AI fallback, score-sync skip). Empty on clean runs. */
+  warnings: string[];
 }
 
 // ---------------------------------------------------------------------------

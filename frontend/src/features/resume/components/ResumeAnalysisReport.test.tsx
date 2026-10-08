@@ -62,27 +62,32 @@ describe('ResumeAnalysisReport', () => {
   it('renders exact deterministic scores', () => {
     render(<ResumeAnalysisReport analysis={makeAnalysis()} resume={makeResume()} jobTitle="Backend Engineer" />);
     expect(screen.getAllByText('79/100').length).toBeGreaterThan(0);
-    expect(screen.getByText('85%')).toBeDefined();
-    expect(screen.getByText('70%')).toBeDefined();
+    expect(screen.getAllByText('85%').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('70%').length).toBeGreaterThan(0);
   });
 
   it('never renders forbidden placeholders', () => {
     const { container } = render(<ResumeAnalysisReport analysis={makeAnalysis()} resume={makeResume()} />);
     const html = container.innerHTML;
-    for (const token of ['undefined', '[object Object]', 'NaN', '&amp;']) {
+    // Note: '&amp;' is valid HTML serialization for '&' in titles (e.g. "Content & Impact")
+    // and is not a placeholder. Only check true placeholders.
+    for (const token of ['undefined', '[object Object]', 'NaN', '&amp;amp;']) {
       expect(html).not.toContain(token);
     }
   });
 
   it('never invents skills', () => {
     render(<ResumeAnalysisReport analysis={makeAnalysis()} resume={makeResume()} />);
-    expect(screen.getByText('React')).toBeDefined();
-    expect(screen.getByText('GraphQL')).toBeDefined();
+    expect(screen.getAllByText('React').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('GraphQL').length).toBeGreaterThan(0);
   });
 
   it('renders empty states with missing optional data', () => {
     render(<ResumeAnalysisReport analysis={null} resume={makeResume()} />);
-    expect(screen.getByText(/Your Report Will Appear Here|Content findings|Skill match data|Format checks/i)).toBeDefined();
+    expect(
+      screen.getAllByText(/Your Report Will Appear Here|Content findings|Skill match data|Format checks/i)
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('handles long job titles without breaking', () => {

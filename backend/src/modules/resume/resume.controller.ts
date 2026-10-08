@@ -56,7 +56,10 @@ export async function analyzeResumeForJob(req: Request, res: Response): Promise<
   }
 
   const resumeId = getRouteParam(req.params, 'id');
-  const { jobTitle, jobDescription } = req.body as { jobTitle?: string; jobDescription: string };
+  const { jobTitle, jobDescription } = (req.body ?? {}) as {
+    jobTitle?: string;
+    jobDescription: string;
+  };
 
   const result = await resumeJobAnalysisService.analyzeResumeForJob(req.user.id, {
     resumeId,
@@ -108,11 +111,29 @@ export async function exportReportPdf(req: Request, res: Response): Promise<void
 
   const resumeId = getRouteParam(req.params, 'id');
   const resumeDetail = await resumeService.getResume(req.user.id, resumeId);
-  const latestAnalysis = await resumeJobAnalysisService.getLatestJobAnalysis(req.user.id, resumeId);
+
+  // Export the analysis the user is actually viewing when specified;
+  // otherwise fall back to the latest analysis for this resume.
+  const requestedAnalysisId =
+    typeof req.query.analysisId === 'string' && req.query.analysisId.trim()
+      ? req.query.analysisId.trim()
+      : null;
+
+  let analysisData = null;
+  let jobTitle = null;
+  if (requestedAnalysisId) {
+    const detail = await resumeJobAnalysisService.getJobAnalysis(req.user.id, resumeId, requestedAnalysisId);
+    analysisData = detail.data;
+    jobTitle = detail.jobTitle;
+  } else {
+    const latestAnalysis = await resumeJobAnalysisService.getLatestJobAnalysis(req.user.id, resumeId);
+    analysisData = latestAnalysis?.data ?? null;
+  }
 
   const buffer = await resumeReportExportService.generateReportPdf(
     resumeDetail,
-    latestAnalysis?.data,
+    analysisData,
+    jobTitle,
   );
 
   const safeFilename = `${resumeDetail.originalFilename.replace(/\.[^/.]+$/, '')}_Analysis_Report.pdf`;

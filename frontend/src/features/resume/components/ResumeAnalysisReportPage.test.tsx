@@ -15,6 +15,7 @@ vi.mock('@/features/resume/api/resume.api', () => ({
 
 vi.mock('@/features/cover-letter/api/cover-letter.api', () => ({
   generateCoverLetter: vi.fn(),
+  downloadCoverLetterFile: vi.fn().mockResolvedValue('Cover_Letter.pdf'),
 }));
 
 import {
@@ -111,9 +112,9 @@ describe('ResumeAnalysisReportPage', () => {
     await waitFor(() => {
       expect(vi.mocked(getJobAnalysis)).toHaveBeenCalledWith('resume-1', 'analysis-1');
     });
-    expect(await screen.findByText('Backend Engineer')).toBeDefined();
+    expect((await screen.findAllByText('Backend Engineer')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('79/100').length).toBeGreaterThan(0);
-    expect(screen.getByText('85%')).toBeDefined();
+    expect(screen.getAllByText('85%').length).toBeGreaterThan(0);
   });
 
   it('resolves the latest analysis without in-memory state', async () => {
@@ -122,7 +123,7 @@ describe('ResumeAnalysisReportPage', () => {
     await waitFor(() => {
       expect(vi.mocked(getLatestJobAnalysis)).toHaveBeenCalledWith('resume-1');
     });
-    expect(await screen.findByText('Backend Engineer')).toBeDefined();
+    expect((await screen.findAllByText('Backend Engineer')).length).toBeGreaterThan(0);
   });
 
   it('shows a retryable error state when loading fails and never navigates away', async () => {
@@ -139,7 +140,7 @@ describe('ResumeAnalysisReportPage', () => {
     await waitFor(() => {
       expect(vi.mocked(getJobAnalysis)).toHaveBeenCalled();
     });
-    await screen.findByText('Backend Engineer');
+    expect((await screen.findAllByText('Backend Engineer')).length).toBeGreaterThan(0);
     const html = container.innerHTML;
     for (const token of ['undefined', '[object Object]', 'NaN']) {
       expect(html).not.toContain(token);

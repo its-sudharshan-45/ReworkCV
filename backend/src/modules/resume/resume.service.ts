@@ -147,19 +147,47 @@ export class ResumeService {
     } catch (error) {
       const failureReason =
         error instanceof AppError ? error.message : 'Resume processing failed';
+      const errorCode =
+        error instanceof AppError
+          ? error.code
+          : ('RESUME_PARSE_FAILED' as const);
 
-      logger.warn({ resumeId, userId, failureReason }, 'Resume processing failed');
+      logger.error(
+        {
+          errorCode,
+          stage: 'resume-process',
+          resumeId,
+          userId,
+          failureReason,
+          err: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+        },
+        'Resume processing failed',
+      );
 
-      const updated = await this.repository.updateProcessing(resumeId, userId, {
-        processingStatus: 'FAILED',
-        failureReason,
-      });
+      // Persist the FAILED status for observability, but surface the real
+      // error to the caller instead of returning 200 + FAILED (which used to
+      // cascade into a misleading "must be fully processed" error at analyze
+      // time with the original exception lost).
+      await this.repository
+        .updateProcessing(resumeId, userId, {
+          processingStatus: 'FAILED',
+          failureReason,
+        })
+        .catch((dbError: unknown) => {
+          logger.error(
+            {
+              errorCode: 'DATABASE_ERROR',
+              stage: 'resume-process-status-persist',
+              resumeId,
+              userId,
+              err: dbError instanceof Error ? dbError.message : String(dbError),
+            },
+            'Failed to persist resume FAILED status',
+          );
+        });
 
-      if (error instanceof AppError && error.statusCode < 500) {
-        return mapResumeToDetail(updated);
-      }
-
-      return mapResumeToDetail(updated);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Resume processing failed', 500, 'RESUME_PARSE_FAILED');
     }
   }
 }
