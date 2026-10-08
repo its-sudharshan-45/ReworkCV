@@ -46,4 +46,9 @@ EXPOSE 4000
 
 ENV NODE_ENV=production
 
+# Container-level health probe (compose also defines one; this covers
+# `docker run` without compose). wget is available in node:alpine.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:4000/api/v1/health || exit 1
+
 CMD ["node", "dist/server.js"]
