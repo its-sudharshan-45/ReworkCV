@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { requireAdminKey } from '../../middleware/admin.middleware.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
+import { adminLimiter } from '../../middleware/rate-limit.middleware.js';
 import { aiModelsController } from './ai-models.controller.js';
 
 export const aiModelsRouter = Router();
@@ -15,12 +17,12 @@ aiModelsRouter.get('/health', requireAuth, (req, res, next) => {
 });
 
 // GET /api/v1/ai/models/scan — trigger codebase scan (admin only in production)
-aiModelsRouter.get('/scan', requireAuth, (req, res, next) => {
+aiModelsRouter.get('/scan', adminLimiter, requireAuth, requireAdminKey, (req, res, next) => {
   aiModelsController.scanCodebase(req, res).catch(next);
 });
 
 // GET /api/v1/ai/models/drift — check Hub revision drift across all models
-aiModelsRouter.get('/drift', requireAuth, (req, res, next) => {
+aiModelsRouter.get('/drift', adminLimiter, requireAuth, requireAdminKey, (req, res, next) => {
   aiModelsController.checkDrift(req, res).catch(next);
 });
 

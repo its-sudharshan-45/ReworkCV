@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AppError } from '../../utils/errors.js';
+import { setDownloadHeaders } from '../../utils/download.js';
 import { getRouteParam } from '../../utils/route-params.js';
 import { coverLetterService } from './cover-letter.service.js';
 
@@ -95,8 +96,10 @@ export async function exportCoverLetter(req: Request, res: Response): Promise<vo
 
   const file = await coverLetterService.exportCoverLetter(id, req.user.id, format);
 
-  res.setHeader('Content-Type', file.mimeType);
-  res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-  res.setHeader('Content-Length', file.buffer.length);
+  setDownloadHeaders(res, {
+    filename: file.filename,
+    mimeType: file.mimeType,
+    contentLength: file.buffer.length,
+  });
   res.status(200).send(file.buffer);
 }

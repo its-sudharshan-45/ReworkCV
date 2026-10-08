@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
+import { adminLimiter, aiLimiter } from '../../middleware/rate-limit.middleware.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
   analyzeWithRag,
@@ -12,9 +13,9 @@ import {
 export const ragRouter = Router();
 
 ragRouter.post('/search', asyncHandler(requireAuth), asyncHandler(searchKnowledge));
-ragRouter.post('/analyze', asyncHandler(requireAuth), asyncHandler(analyzeWithRag));
+ragRouter.post('/analyze', aiLimiter, asyncHandler(requireAuth), asyncHandler(analyzeWithRag));
 // Admin-only: ingestion / reindex / delete are guarded by x-admin-api-key
 // inside the controller and never exposed to normal users.
-ragRouter.post('/ingest', asyncHandler(ingestDocument));
-ragRouter.post('/reindex', asyncHandler(reindexKnowledge));
-ragRouter.delete('/documents/:id', asyncHandler(deleteDocument));
+ragRouter.post('/ingest', adminLimiter, asyncHandler(ingestDocument));
+ragRouter.post('/reindex', adminLimiter, asyncHandler(reindexKnowledge));
+ragRouter.delete('/documents/:id', adminLimiter, asyncHandler(deleteDocument));

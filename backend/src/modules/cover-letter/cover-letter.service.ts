@@ -4,6 +4,7 @@ import { resumeJobAnalysisRepository } from '../resume/resume-job-analysis.repos
 import { coverLetterRepository, CoverLetterRepository } from './cover-letter.repository.js';
 import { generateCoverLetterText } from '../../ai/cover-letter/cover-letter-generator.js';
 import { coverLetterExportService, CoverLetterExportService } from './cover-letter-export.service.js';
+import { sanitizeDownloadFilename } from '../../utils/download.js';
 import type {
   CoverLetterRecord,
   CoverLetterResponse,
@@ -36,13 +37,15 @@ export class CoverLetterService {
   ) {}
 
   async generateCoverLetter(userId: string, input: GenerateCoverLetterInput): Promise<CoverLetterResponse> {
+    const companyName = (input.companyName || '').slice(0, 200) || null;
+    const tone = input.tone === 'confident' || input.tone === 'enthusiastic' ? input.tone : 'professional';
     const resume = await resumeRepository.findByIdForUser(input.resumeId, userId);
     if (!resume) {
       throw new AppError('Resume not found', 404, 'NOT_FOUND');
     }
 
     let jobDescription = input.jobDescription || '';
-    let jobTitle = input.jobTitle || '';
+    let jobTitle = (input.jobTitle || '').slice(0, 200);
     let analysisContext = null;
 
     if (input.jobAnalysisId) {
@@ -63,6 +66,9 @@ export class CoverLetterService {
 
     if (!jobDescription || jobDescription.trim().length < 10) {
       throw new AppError('A valid job description is required to generate a cover letter', 400, 'VALIDATION_ERROR');
+    }
+    if (jobDescription.length > 20_000) {
+      throw new AppError('Job description must be 20000 characters or fewer', 413, 'VALIDATION_ERROR');
     }
 
     const structuredData = resume.structured_data;
@@ -91,10 +97,10 @@ export class CoverLetterService {
       structuredResume,
       extractedResumeText: resume.extracted_text || undefined,
       jobTitle,
-      companyName: input.companyName,
+      companyName: companyName || undefined,
       jobDescription,
       analysisContext,
-      tone: input.tone || 'professional',
+      tone,
     });
 
     const record = await this.repository.create({
@@ -102,10 +108,10 @@ export class CoverLetterService {
       resumeId: input.resumeId,
       jobAnalysisId: input.jobAnalysisId ?? null,
       jobTitle: jobTitle || null,
-      companyName: input.companyName || null,
+      companyName,
       jobDescription,
       content,
-      tone: input.tone || 'professional',
+      tone,
     });
 
     return mapCoverLetterToResponse(record);
@@ -125,6 +131,12 @@ export class CoverLetterService {
   }
 
   async updateCoverLetter(id: string, userId: string, input: UpdateCoverLetterInput): Promise<CoverLetterResponse> {
+    if (typeof input.content !== 'string' || input.content.trim().length === 0) {
+      throw new AppError('Cover letter content is required', 400, 'VALIDATION_ERROR');
+    }
+    if (input.content.length > 20_000) {
+      throw new AppError('Cover letter content must be 20000 characters or fewer', 413, 'VALIDATION_ERROR');
+    }
     const updated = await this.repository.updateContent(id, userId, input.content);
     if (!updated) {
       throw new AppError('Cover letter not found', 404, 'NOT_FOUND');
@@ -218,7 +230,10 @@ export class CoverLetterService {
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .replace(/_+/g, '_');
 
-    const filename = `${candidateName.replace(/\s+/g, '_')}_Cover_Letter_${safeTitle}.${format}`;
+    const filename = sanitizeDownloadFilename(
+      `${candidateName.replace(/\s+/g, '_')}_Cover_Letter_${safeTitle}.${format}`,
+      `Cover_Letter.${format}`,
+    );
 
     if (format === 'docx') {
       const buffer = await this.exportService.generateDocx(record.content, {

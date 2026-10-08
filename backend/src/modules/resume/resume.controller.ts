@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AppError } from '../../utils/errors.js';
+import { sanitizeDownloadFilename, setDownloadHeaders } from '../../utils/download.js';
 import { getRouteParam } from '../../utils/route-params.js';
 import { resumeService } from './resume.service.js';
 import { resumeJobAnalysisService } from './resume-job-analysis.service.js';
@@ -136,10 +137,13 @@ export async function exportReportPdf(req: Request, res: Response): Promise<void
     jobTitle,
   );
 
-  const safeFilename = `${resumeDetail.originalFilename.replace(/\.[^/.]+$/, '')}_Analysis_Report.pdf`;
+  const baseName = resumeDetail.originalFilename.replace(/\.[^/.]+$/, '');
+  const safeFilename = sanitizeDownloadFilename(`${baseName}_Analysis_Report.pdf`, 'Analysis_Report.pdf');
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
-  res.setHeader('Content-Length', buffer.length);
+  setDownloadHeaders(res, {
+    filename: safeFilename,
+    mimeType: 'application/pdf',
+    contentLength: buffer.length,
+  });
   res.status(200).send(buffer);
 }

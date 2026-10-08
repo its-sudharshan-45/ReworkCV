@@ -69,7 +69,12 @@ const envSchema = z.object({
   RAG_MAX_CONTEXT_CHARS: z.coerce.number().int().positive().default(6000),
   RAG_CACHE_TTL_MS: z.coerce.number().int().positive().default(300_000),
   RAG_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
-  RAG_ADMIN_API_KEY: z.string().optional(),
+  RAG_ADMIN_API_KEY: z
+    .preprocess((val) => {
+      // Treat empty string as unset (fail-closed deny in controllers).
+      if (val === undefined || val === '' || val === null) return undefined;
+      return val;
+    }, z.string().min(32).optional()),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -81,6 +86,19 @@ function loadEnv(): Env {
     const formatted = parsed.error.flatten().fieldErrors;
     console.error('Invalid environment configuration:', formatted);
     process.exit(1);
+  }
+
+  // Production fail-closed: never allow wildcard CORS with credentials.
+  if (parsed.data.NODE_ENV === 'production') {
+    const origins = parsed.data.CORS_ORIGIN.split(',').map((o) => o.trim());
+    if (origins.includes('*')) {
+      console.error('Invalid environment configuration: CORS_ORIGIN must not contain "*" in production.');
+      process.exit(1);
+    }
+    if (origins.some((o) => o.startsWith('http://localhost') || o.startsWith('http://127.0.0.1'))) {
+      console.error('Invalid environment configuration: CORS_ORIGIN must not contain localhost in production.');
+      process.exit(1);
+    }
   }
 
   return parsed.data;

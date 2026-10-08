@@ -9,7 +9,7 @@ function createFile(overrides: Partial<Express.Multer.File>): Express.Multer.Fil
     encoding: '7bit',
     mimetype: 'application/pdf',
     size: 1024,
-    buffer: Buffer.from('sample'),
+    buffer: Buffer.from('%PDF-1.4 sample'),
     stream: null as never,
     destination: '',
     filename: '',

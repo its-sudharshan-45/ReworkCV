@@ -98,7 +98,7 @@ describe('Resume API', () => {
     const response = await request(app)
       .post('/api/v1/resumes')
       .set(authHeader())
-      .attach('file', Buffer.from('%PDF sample'), {
+      .attach('file', Buffer.from('%PDF-1.4 sample'), {
         filename: 'resume.pdf',
         contentType: 'application/pdf',
       });

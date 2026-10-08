@@ -6,13 +6,31 @@ import { AppError } from './utils/errors.js';
 import { correlationLogger, httpLogger } from './middleware/logging.middleware.js';
 import { requestIdMiddleware } from './middleware/request-id.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { apiLimiter } from './middleware/rate-limit.middleware.js';
 import { apiRouter } from './routes/index.js';
 
 export function createApp() {
   const app = express();
 
+  // Behind a reverse proxy / LB (production TLS termination), client IPs
+  // come from X-Forwarded-For. Trust only the first hop so express-rate-limit
+  // keys by real client IP without allowing spoofed-header bypass.
+  app.set('trust proxy', 1);
+
   app.disable('x-powered-by');
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      frameguard: { action: 'deny' },
+      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+      referrerPolicy: { policy: 'no-referrer' },
+    }),
+  );
   app.use(
     cors({
       origin: (origin, callback) => {
@@ -29,7 +47,10 @@ export function createApp() {
         }
 
         const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
-        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        // Never treat '*' as an allowed origin: with credentials enabled the
+        // browser would send cookies/Authorization to any site (credential
+        // leakage). Configure explicit origins instead.
+        if (allowedOrigins.includes(origin)) {
           callback(null, true);
           return;
         }
@@ -37,6 +58,10 @@ export function createApp() {
         callback(null, false);
       },
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Admin-Api-Key'],
+      maxAge: 600,
+      optionsSuccessStatus: 204,
     }),
   );
   app.use(express.json({ limit: '1mb' }));
@@ -68,7 +93,7 @@ export function createApp() {
   app.use(httpLogger);
   app.use(correlationLogger);
 
-  app.use('/api/v1', apiRouter);
+  app.use('/api/v1', apiLimiter, apiRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

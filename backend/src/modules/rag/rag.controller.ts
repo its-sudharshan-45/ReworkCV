@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { parseJobDescription } from '../../ai/job/job-jd-parser.js';
 import { matchResumeToJob } from '../../ai/job/resume-job-matcher.js';
@@ -16,8 +17,11 @@ function requireAdmin(req: Request): void {
   if (!adminApiKey) {
     throw new AppError('RAG admin operations are not configured', 403, 'AUTHORIZATION_ERROR');
   }
-  const provided = req.header('x-admin-api-key');
-  if (provided !== adminApiKey) {
+  // Constant-time comparison: naive !== leaks the key byte-by-byte to
+  // network timing measurements.
+  const provided = Buffer.from(req.header('x-admin-api-key') ?? '');
+  const expected = Buffer.from(adminApiKey);
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     throw new AppError('Admin authorization required', 403, 'AUTHORIZATION_ERROR');
   }
 }
