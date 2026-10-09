@@ -8,6 +8,9 @@ export interface GenerateCoverLetterOptions {
   candidateEmail?: string;
   candidatePhone?: string;
   candidateLocation?: string;
+  candidateLinkedin?: string;
+  candidateGithub?: string;
+  candidatePortfolio?: string;
   structuredResume?: StructuredResume | null;
   extractedResumeText?: string;
   jobTitle?: string;
@@ -38,6 +41,9 @@ export async function generateCoverLetterText(options: GenerateCoverLetterOption
     candidateEmail,
     candidatePhone,
     candidateLocation,
+    candidateLinkedin,
+    candidateGithub,
+    candidatePortfolio,
     structuredResume,
     extractedResumeText,
     jobTitle,
@@ -49,7 +55,8 @@ export async function generateCoverLetterText(options: GenerateCoverLetterOption
     userFeedback,
   } = options;
 
-  // Build grounded candidate summary from resume only
+  // Build grounded candidate summary from the analyzed resume only. Every
+  // section below comes from the stored parsed resume — never defaults.
   const skillsList = structuredResume?.skills?.length
     ? structuredResume.skills.join(', ')
     : (analysisContext?.matchedSkills || []).join(', ');
@@ -57,6 +64,22 @@ export async function generateCoverLetterText(options: GenerateCoverLetterOption
   const experiences = structuredResume?.experience?.length
     ? structuredResume.experience
         .map((exp) => `${exp.title || 'Role'} at ${exp.company || 'Company'} (${exp.startDate || ''} - ${exp.endDate || 'Present'}): ${exp.description || ''}`)
+        .join('\n')
+    : '';
+
+  const educationList = structuredResume?.education?.length
+    ? structuredResume.education
+        .map((edu) => [edu.degree, edu.field, edu.institution].filter(Boolean).join(', '))
+        .filter(Boolean)
+        .join('\n')
+    : '';
+
+  const projectList = structuredResume?.projects?.length
+    ? structuredResume.projects
+        .map((project) => {
+          const tech = project.technologies?.length ? ` [${project.technologies.join(', ')}]` : '';
+          return `${project.name || 'Project'}${tech}: ${project.description || ''}`;
+        })
         .join('\n')
     : '';
 
@@ -89,14 +112,27 @@ CRITICAL INSTRUCTION - GROUNDING & TRUTHFULNESS:
 You MUST NOT invent, exaggerate, or assume any experience, skills, projects, certifications, achievements, companies, dates, or degrees that are not explicitly documented in the provided resume data.
 Base every claim on verifiable details from the candidate's actual background.
 
+IDENTITY (mandatory — the candidate's exact resume details):
+- Sign off with the candidate name below using its EXACT spelling and casing. Do not expand, shorten, title-case, uppercase, or otherwise alter it in any way.
+- Reproduce the email, phone, LinkedIn, GitHub, and portfolio URLs EXACTLY as given below, or omit them if blank. Never invent, guess, reformat, or substitute contact details or links.
+- Every fact in the letter (education, experience, skills, projects) must come from the documented resume sections below. Never substitute details from any other source.
+- The candidate is the author of this letter: never address any part of the letter to the candidate, and never sign with any other name.
+
 CANDIDATE INFORMATION:
 Name: ${candidateName || 'Candidate'}
 Email: ${candidateEmail || ''}
 Phone: ${candidatePhone || ''}
 Location: ${candidateLocation || ''}
+LinkedIn: ${candidateLinkedin || ''}
+GitHub: ${candidateGithub || ''}
+Portfolio: ${candidatePortfolio || ''}
 Documented Skills: ${skillsList || 'Not specified'}
 Documented Experience:
 ${experiences || extractedResumeText?.slice(0, 1500) || 'See resume details'}
+Documented Education:
+${educationList || 'See resume details'}
+Notable Projects:
+${projectList || 'See resume details'}
 
 TARGET OPPORTUNITY:
 Target Job Title: ${jobTitle || 'Target Position'}
@@ -163,5 +199,5 @@ I would welcome the chance to talk about how I can help your team. Thank you for
 Sincerely,
 
 ${candidate}
-${candidateEmail ? `Email: ${candidateEmail}\n` : ''}${candidatePhone ? `Phone: ${candidatePhone}\n` : ''}`;
+${candidateEmail ? `Email: ${candidateEmail}\n` : ''}${candidatePhone ? `Phone: ${candidatePhone}\n` : ''}${candidateLinkedin ? `LinkedIn: ${candidateLinkedin}\n` : ''}${candidateGithub ? `GitHub: ${candidateGithub}\n` : ''}${candidatePortfolio ? `Portfolio: ${candidatePortfolio}\n` : ''}`;
 }
