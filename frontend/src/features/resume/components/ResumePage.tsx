@@ -4,11 +4,10 @@ import { FormMessage } from '@/components/ui/form-message';
 import {
   analyzeResumeForJob,
   deleteResume,
-  listJobAnalyses,
-  listResumes,
   processResume,
   uploadResume,
 } from '@/features/resume/api/resume.api';
+import { listScanHistory } from '@/features/resume/api/scan-history';
 import { ResumeUpload } from '@/features/resume/components/ResumeUpload';
 import { AnalysisLoadingState } from '@/features/resume/components/AnalysisLoadingState';
 import { DummyReportPreview } from '@/features/resume/components/DummyReportPreview';
@@ -45,27 +44,10 @@ export function ResumePage() {
     setError(null);
 
     try {
-      const data = await listResumes();
-      const items = data.resumes || [];
-      // N+1 safeguard: resolve per-resume scores without failing the whole
-      // list when a single analysis lookup fails.
-      const settled = await Promise.allSettled(
-        items.map(async (res) => {
-          try {
-            const analysesData = await listJobAnalyses(res.id);
-            if (analysesData.analyses && analysesData.analyses.length > 0) {
-              return { ...res, score: analysesData.analyses[0].matchScore };
-            }
-          } catch {
-            // keep existing score
-          }
-          return res;
-        }),
-      );
+      // Scan History: every analyzed resume with its latest match score.
+      const items = await listScanHistory();
       if (!mountedRef.current) return;
-      setResumes(
-        settled.map((r) => (r.status === 'fulfilled' ? r.value : null)).filter((r) => r !== null),
-      );
+      setResumes(items);
     } catch (loadError) {
       if (!mountedRef.current) return;
       setError(

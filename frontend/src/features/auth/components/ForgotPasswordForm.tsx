@@ -30,8 +30,13 @@ export function ForgotPasswordForm() {
 
     try {
       const supabase = createClient();
+      // Route recovery emails through the auth callback so PKCE-style
+      // `?code=` links are exchanged for a session before the user reaches
+      // the reset form. The callback forwards `next` after the exchange.
+      const callbackUrl = new URL('/auth/callback', window.location.origin);
+      callbackUrl.searchParams.set('next', AUTH_ROUTES.resetPassword);
       const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-        redirectTo: `${window.location.origin}${AUTH_ROUTES.resetPassword}`,
+        redirectTo: callbackUrl.toString(),
       });
 
       if (error) {

@@ -7,8 +7,8 @@ import {
   getJobAnalysis,
   getLatestJobAnalysis,
   getResume,
-  listResumes,
 } from '@/features/resume/api/resume.api';
+import { listScanHistory } from '@/features/resume/api/scan-history';
 import { generateCoverLetter, downloadCoverLetterFile, rewriteCoverLetter, updateCoverLetter } from '@/features/cover-letter/api/cover-letter.api';
 import { ResumeAnalysisReport, type ReportView } from '@/features/resume/components/ResumeAnalysisReport';
 import type { AiCoachChatMessage } from '@/features/ai-coach/api/ai-coach.api';
@@ -127,8 +127,9 @@ export function ResumeAnalysisReportPage() {
     let cancelled = false;
     async function loadList() {
       try {
-        const data = await listResumes();
-        if (!cancelled) setResumes(data.resumes || []);
+        // Scan History drawer: analyzed resumes with their match scores.
+        const items = await listScanHistory();
+        if (!cancelled) setResumes(items);
       } catch {
         // History drawer is auxiliary; report must render without it.
       }
@@ -183,8 +184,16 @@ export function ResumeAnalysisReportPage() {
     }
   }
 
-  async function handleRewriteCoverLetter(feedback: string) {
-    if (!coverLetterId || isRewritingCoverLetter || !feedback) return;
+  async function handleRewriteCoverLetter(feedback: string): Promise<boolean> {
+    if (!coverLetterId) {
+      setCoverLetterError('Generate the cover letter first, then request changes.');
+      return false;
+    }
+    if (isRewritingCoverLetter) return false;
+    if (feedback.trim().length < 3) {
+      setCoverLetterError('Please describe the changes you would like (at least 3 characters).');
+      return false;
+    }
     setCoverLetterError(null);
     setIsRewritingCoverLetter(true);
     try {
@@ -192,12 +201,14 @@ export function ResumeAnalysisReportPage() {
       setCoverLetterContent(res.coverLetter.content);
       setEditedCoverLetterContent(res.coverLetter.content);
       setIsEditingCoverLetter(false);
+      return true;
     } catch (rewriteError) {
       setCoverLetterError(
         rewriteError instanceof Error
           ? rewriteError.message
           : 'Failed to rewrite cover letter. Please try again.',
       );
+      return false;
     } finally {
       setIsRewritingCoverLetter(false);
     }

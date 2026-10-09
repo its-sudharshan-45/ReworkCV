@@ -47,6 +47,9 @@ export function SignupForm() {
         password: parsed.data.password,
         options: {
           data: { full_name: parsed.data.fullName },
+          // Send email-confirmation links back to the app callback so the
+          // session is exchanged and the user lands on the analysis page.
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 

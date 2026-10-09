@@ -21,24 +21,22 @@ export function AuthCallbackPage() {
     }
 
     async function handleAuthCallback() {
-      const typeParam = searchParams.get('type');
-      const hashType = window.location.hash.match(/type=([^&]+)/)?.[1];
-      if (typeParam === 'recovery' || hashType === 'recovery') {
-        // Password-recovery links land here; hand off to the reset page which
-        // reads the recovery session from the URL.
-        if (isMounted) navigate(AUTH_ROUTES.resetPassword, { replace: true });
+      // Provider-side failures (e.g. Google OAuth denied) arrive as query
+      // params — forward them to the login screen for a friendly message.
+      const oauthError = searchParams.get('error') ?? searchParams.get('error_code');
+      if (oauthError) {
+        if (isMounted) {
+          setErrorMsg('OAuth authentication failed. Redirecting to login…');
+          redirectLater(`${AUTH_ROUTES.login}?error=oauth_exchange_failed`, 1500);
+        }
         return;
       }
 
       const code = searchParams.get('code');
-      const nextParam = searchParams.get('next');
-      const destination =
-        nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
-          ? nextParam
-          : AUTH_ROUTES.dashboard;
-
       const supabase = createClient();
 
+      // Exchange PKCE codes FIRST so recovery links (?code=) establish a
+      // session before we route based on link type.
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
@@ -50,6 +48,7 @@ export function AuthCallbackPage() {
         }
       } else {
         // Check if session was already picked up from URL hash
+        // (implicit flow: #access_token=...&type=recovery).
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           if (isMounted) {
@@ -59,6 +58,21 @@ export function AuthCallbackPage() {
           return;
         }
       }
+
+      // Password-recovery links land here; hand off to the reset page which
+      // reads the recovery session established above.
+      const typeParam = searchParams.get('type');
+      const hashType = window.location.hash.match(/type=([^&]+)/)?.[1];
+      if (typeParam === 'recovery' || hashType === 'recovery') {
+        if (isMounted) navigate(AUTH_ROUTES.resetPassword, { replace: true });
+        return;
+      }
+
+      const nextParam = searchParams.get('next');
+      const destination =
+        nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+          ? nextParam
+          : AUTH_ROUTES.dashboard;
 
       if (isMounted) {
         navigate(destination, { replace: true });

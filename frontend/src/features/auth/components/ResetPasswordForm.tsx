@@ -18,11 +18,22 @@ export function ResetPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // A valid recovery session (from the email link) is required to set a password.
+  // Handles both link styles: PKCE `?code=` (exchanged here as a fallback
+  // for links that bypass /auth/callback) and implicit `#access_token=`
+  // fragments picked up automatically by the Supabase client.
   useEffect(() => {
     let cancelled = false;
     async function checkSession() {
       try {
         const supabase = createClient();
+        const code = new URLSearchParams(window.location.search).get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!cancelled && error) {
+            setHasSession(false);
+            return;
+          }
+        }
         const { data } = await supabase.auth.getSession();
         if (!cancelled) setHasSession(!!data.session);
       } catch {
@@ -30,8 +41,15 @@ export function ResetPasswordForm() {
       }
     }
     void checkSession();
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled && session) setHasSession(true);
+    });
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 

@@ -414,7 +414,7 @@ interface CoverLetterPanelProps {
   canGenerate: boolean;
   canDownload: boolean;
   onGenerate: () => void;
-  onRewrite: (feedback: string) => void;
+  onRewrite: (feedback: string) => void | Promise<boolean | void>;
   onDownload: () => void;
   onEditedChange: (content: string) => void;
   onToggleEdit: () => void;
@@ -580,18 +580,28 @@ function CoverLetterPanel(props: CoverLetterPanelProps) {
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
                 rows={2}
-                placeholder="e.g. Make the opening shorter and mention my payments API work…"
+                placeholder="e.g. Make the opening shorter and mention my payments API work… (at least 3 characters)"
                 aria-label="Suggest changes to the cover letter"
-                disabled={props.rewriting}
+                disabled={busy}
                 className="mt-2 w-full resize-y rounded-lg border border-slate-200 bg-white p-2.5 text-[13px] text-slate-800 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={() => {
-                  props.onRewrite(feedback.trim());
-                  setFeedback('');
+                  const request = feedback.trim();
+                  const result = props.onRewrite(request);
+                  // Keep the suggestion text if the rewrite fails so the user
+                  // never has to retype it; clear only after a confirmed success.
+                  if (result && typeof (result as Promise<unknown>).then === 'function') {
+                    (result as Promise<boolean | void>).then(
+                      (ok) => {
+                        if (ok !== false) setFeedback('');
+                      },
+                      () => undefined,
+                    );
+                  }
                 }}
-                disabled={!feedback.trim() || props.rewriting}
+                disabled={feedback.trim().length < 3 || busy}
                 className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#7C3AED] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#6D28D9] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {props.rewriting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
