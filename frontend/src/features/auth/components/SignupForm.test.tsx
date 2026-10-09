@@ -114,7 +114,10 @@ describe('SignupForm', () => {
       expect(signUp).toHaveBeenCalledWith({
         email: 'jane@example.com',
         password: 'password123',
-        options: { data: { full_name: 'Jane Doe' } },
+        options: {
+          data: { full_name: 'Jane Doe' },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
     });
   });

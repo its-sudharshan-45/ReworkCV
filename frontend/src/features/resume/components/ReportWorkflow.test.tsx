@@ -249,4 +249,66 @@ describe('3-step post-analysis workflow', () => {
     });
     expect(await screen.findByText(/Manually edited draft/)).toBeDefined();
   });
+
+  it('disables rewrite for too-short suggestions (backend requires 3+ characters)', async () => {
+    const baseLetter = {
+      id: 'cl-1',
+      userId: 'user-1',
+      resumeId: 'resume-1',
+      jobAnalysisId: 'analysis-1',
+      jobTitle: 'Backend Engineer',
+      companyName: null,
+      jobDescription: 'Seeking a backend engineer.',
+      content: 'Dear Hiring Manager,\n\nDraft body.\n\nSincerely,\nJane',
+      tone: 'professional',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    vi.mocked(generateCoverLetter).mockResolvedValue({ coverLetter: baseLetter });
+
+    renderAt('/resume/report/resume-1/analysis-1');
+    await screen.findAllByText('Backend Engineer');
+    fireEvent.click(screen.getAllByRole('button', { name: /Step 3.*Cover Letter/i })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Cover Letter' }));
+    expect(await screen.findByText('Generated Cover Letter')).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText('Suggest changes to the cover letter'), {
+      target: { value: 'ok' },
+    });
+    expect(screen.getByRole('button', { name: 'Rewrite with my suggestions' })).toBeDisabled();
+    expect(vi.mocked(rewriteCoverLetter)).not.toHaveBeenCalled();
+  });
+
+  it('keeps the suggestion text and shows an error when rewrite fails', async () => {
+    const baseLetter = {
+      id: 'cl-1',
+      userId: 'user-1',
+      resumeId: 'resume-1',
+      jobAnalysisId: 'analysis-1',
+      jobTitle: 'Backend Engineer',
+      companyName: null,
+      jobDescription: 'Seeking a backend engineer.',
+      content: 'Dear Hiring Manager,\n\nDraft body.\n\nSincerely,\nJane',
+      tone: 'professional',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    vi.mocked(generateCoverLetter).mockResolvedValue({ coverLetter: baseLetter });
+    vi.mocked(rewriteCoverLetter).mockRejectedValueOnce(new Error('Rewrite service unavailable'));
+
+    renderAt('/resume/report/resume-1/analysis-1');
+    await screen.findAllByText('Backend Engineer');
+    fireEvent.click(screen.getAllByRole('button', { name: /Step 3.*Cover Letter/i })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Cover Letter' }));
+    expect(await screen.findByText('Generated Cover Letter')).toBeDefined();
+
+    const box = screen.getByLabelText('Suggest changes to the cover letter');
+    fireEvent.change(box, { target: { value: 'Make it shorter please' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rewrite with my suggestions' }));
+
+    expect(await screen.findByText('Rewrite service unavailable')).toBeDefined();
+    expect((screen.getByLabelText('Suggest changes to the cover letter') as HTMLTextAreaElement).value).toBe(
+      'Make it shorter please',
+    );
+  });
 });

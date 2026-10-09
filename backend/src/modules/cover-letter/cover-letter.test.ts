@@ -138,6 +138,69 @@ describe('Cover Letter API & Service', () => {
     expect(generateCoverLetterText).toHaveBeenCalled();
   });
 
+  it('generates with the analysis job when it belongs to the same resume', async () => {
+    vi.mocked(resumeJobAnalysisRepository.findByIdForUser).mockResolvedValueOnce({
+      id: 'analysis-1',
+      resume_id: RESUME_ID,
+      job_description: 'Looking for a senior frontend developer with React experience.',
+      job_title: 'Frontend Engineer',
+      analysis_result: null,
+    } as never);
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ resumeId: RESUME_ID, jobAnalysisId: 'analysis-1' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.coverLetter).toBeDefined();
+  });
+
+  it('rejects generation when the analysis belongs to a different resume', async () => {
+    vi.mocked(resumeJobAnalysisRepository.findByIdForUser).mockResolvedValueOnce({
+      id: 'analysis-1',
+      resume_id: 'other-resume-id',
+      job_description: 'Some job description text here.',
+      job_title: 'Backend Engineer',
+      analysis_result: null,
+    } as never);
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ resumeId: RESUME_ID, jobAnalysisId: 'analysis-1' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects generation for an unknown job analysis', async () => {
+    vi.mocked(resumeJobAnalysisRepository.findByIdForUser).mockResolvedValueOnce(null);
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ resumeId: RESUME_ID, jobAnalysisId: 'missing-analysis' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('refuses to generate when the resume has no identifiable candidate name', async () => {
+    vi.mocked(resumeRepository.findByIdForUser).mockResolvedValueOnce({
+      ...sampleResume,
+      original_filename: 'cv.pdf',
+      extracted_text: 'Just some prose without any identity markers in it here.',
+      structured_data: null,
+    });
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({
+        resumeId: RESUME_ID,
+        jobDescription: 'Looking for a senior frontend developer with React experience.',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('lists cover letters for the authenticated user', async () => {
     const res = await request(app)
       .get('/api/v1/cover-letters')

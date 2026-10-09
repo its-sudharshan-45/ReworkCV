@@ -9,6 +9,7 @@ vi.mock('@/features/resume/api/resume.api', () => ({
   getJobAnalysis: vi.fn(),
   getLatestJobAnalysis: vi.fn(),
   listResumes: vi.fn().mockResolvedValue({ resumes: [] }),
+  listJobAnalyses: vi.fn().mockResolvedValue({ analyses: [] }),
   downloadResumeReportPdf: vi.fn().mockResolvedValue(undefined),
   deleteResume: vi.fn().mockResolvedValue(undefined),
 }));

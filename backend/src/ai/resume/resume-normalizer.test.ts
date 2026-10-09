@@ -41,7 +41,6 @@ describe('Resume Entity Normalizer', () => {
     const items = deduplicateStrings(['Google', 'google', 'GOOGLE', 'Microsoft']);
     expect(items).toEqual(['Google', 'Microsoft']);
   });
-
   it('passes minimal model sample test requirements (Requirement 25)', () => {
     const sampleText = `
       John Doe
@@ -96,5 +95,43 @@ describe('Resume Entity Normalizer', () => {
     expect(structured.projects[0].name).toBe('UpSkilr Career Platform');
 
     expect(structured.certifications.some((c) => c.name?.includes('AWS Certified Developer'))).toBe(true);
+  });
+
+  it('recovers HTML and Node.js from resume text even when NER finds nothing', () => {
+    const text = `
+      Jane Doe
+      jane@example.com
+
+      SKILLS
+      HTML CSS JavaScript Node.js Express MongoDB
+
+      EXPERIENCE
+      Web Developer at Startup (2023 - Present)
+      Built responsive pages with HTML and CSS.
+    `;
+
+    const structured = buildStructuredResume(text, []);
+
+    expect(structured.skills).toContain('HTML');
+    expect(structured.skills).toContain('Node.js');
+    expect(structured.skills).toContain('CSS');
+    expect(structured.skills).toContain('JavaScript');
+  });
+
+  it('merges split email tokens without introducing spaces', () => {
+    const rawEntities: RawNEREntity[] = [
+      { entity: 'B-EMAIL', word: 'its', score: 0.9, index: 1 },
+      { entity: 'I-EMAIL', word: '.', score: 0.9, index: 2 },
+      { entity: 'I-EMAIL', word: 'sudharshan', score: 0.9, index: 3 },
+      { entity: 'I-EMAIL', word: '.', score: 0.9, index: 4 },
+      { entity: 'I-EMAIL', word: 'in', score: 0.9, index: 5 },
+      { entity: 'I-EMAIL', word: '@', score: 0.9, index: 6 },
+      { entity: 'I-EMAIL', word: 'gmail', score: 0.9, index: 7 },
+      { entity: 'I-EMAIL', word: '.', score: 0.9, index: 8 },
+      { entity: 'I-EMAIL', word: 'com', score: 0.9, index: 9 },
+    ];
+
+    const merged = mergeRawEntities(rawEntities);
+    expect(merged.emails).toEqual(['its.sudharshan.in@gmail.com']);
   });
 });

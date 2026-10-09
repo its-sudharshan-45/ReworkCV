@@ -107,4 +107,40 @@ XYZ University
     expect(structured.sections.some((s) => s.key === 'projects')).toBe(false);
     expect(structured.skills).toEqual([]);
   });
+
+  it('extracts skills from space-separated and slash-joined lines without dropping the line', () => {
+    const resume = `
+Jane Doe
+
+SKILLS
+HTML CSS JavaScript Node.js Express MongoDB
+HTML/CSS/TypeScript
+Frontend: React, Tailwind CSS
+`.trim();
+
+    const structured = parseResumeSections(resume);
+    expect(structured.skills).toContain('HTML');
+    expect(structured.skills).toContain('CSS');
+    expect(structured.skills).toContain('JavaScript');
+    expect(structured.skills).toContain('Node.js');
+    expect(structured.skills).toContain('TypeScript');
+    expect(structured.skills).toContain('React');
+  });
+
+  it('keeps CI/CD intact while splitting slash-joined skills', () => {
+    const resume = `
+Jane Doe
+
+TECH STACK
+CI/CD, Docker, HTML/CSS, AWS
+`.trim();
+
+    const structured = parseResumeSections(resume);
+    expect(structured.sections.map((s) => s.key)).toContain('skills');
+    expect(structured.skills).toContain('CI/CD');
+    expect(structured.skills).toContain('Docker');
+    expect(structured.skills).toContain('HTML');
+    expect(structured.skills).toContain('CSS');
+    expect(structured.skills).toContain('AWS');
+  });
 });

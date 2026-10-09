@@ -46,6 +46,12 @@ describe('ForgotPasswordForm', () => {
       await screen.findByText(/If an account exists for this email/i),
     ).toBeTruthy();
     expect(resetPasswordForEmail).toHaveBeenCalledTimes(1);
+    // Recovery links must route through the auth callback so PKCE codes are
+    // exchanged for a session before the reset form loads.
+    const redirectTo = resetPasswordForEmail.mock.calls[0][1]?.redirectTo as string;
+    const callbackUrl = new URL(redirectTo);
+    expect(callbackUrl.pathname).toBe('/auth/callback');
+    expect(callbackUrl.searchParams.get('next')).toBe('/reset-password');
   });
 
   it('shows a friendly error when the request fails', async () => {

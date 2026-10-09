@@ -124,6 +124,39 @@ describe('ResumeJobAnalysisService', () => {
     expect(jobAnalysisRepo.create).toHaveBeenCalled();
   });
 
+  it('does not report skills as missing when stored skills are stale but extracted text evidences them', async () => {
+    const staleResume: ResumeRecord = {
+      ...mockResume,
+      extracted_text: 'Jane Doe\n\nSKILLS\nHTML, CSS, JavaScript, Node.js, Express\n\nEXPERIENCE\nWeb Developer building HTML pages with Node.js backends.',
+      structured_data: {
+        sections: [],
+        skills: ['CSS'],
+        structuredResume: {
+          personal: { name: 'Jane' },
+          skills: ['CSS'],
+          experience: [{ title: 'Web Developer', description: 'Building HTML pages with Node.js backends.' }],
+          education: [],
+          projects: [],
+          certifications: [],
+          languages: [],
+        },
+      },
+    };
+    const { service } = createService({ resumeRecord: staleResume });
+
+    const response = await service.analyzeResumeForJob(userId, {
+      resumeId,
+      jobTitle: 'Frontend Developer',
+      jobDescription: 'Required skills: HTML, CSS, Node.js.',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data.matchedSkills).toContain('HTML');
+    expect(response.data.matchedSkills).toContain('Node.js');
+    expect(response.data.missingRequiredSkills).not.toContain('HTML');
+    expect(response.data.missingRequiredSkills).not.toContain('Node.js');
+  });
+
   it('keeps deterministic scores authoritative when RAG insights are merged', async () => {
     const { service } = createService();
     const fakeInsights = {

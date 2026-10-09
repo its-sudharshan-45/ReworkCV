@@ -1,6 +1,6 @@
 // cspell:ignore reactjs vuejs nodejs
 import { describe, expect, it } from 'vitest';
-import { findMatchingSkills, normalizeSkill, skillsMatch } from './skill-normalizer.js';
+import { findMatchingSkills, findSkillsInText, normalizeSkill, skillsMatch } from './skill-normalizer.js';
 
 describe('normalizeSkill', () => {
   it('normalizes ReactJS to react', () => {
@@ -85,5 +85,29 @@ describe('findMatchingSkills', () => {
     expect(result.matched).toContain('Node.js');
     expect(result.matched).toContain('Express');
     expect(result.missing).toHaveLength(0);
+  });
+});
+
+describe('findSkillsInText', () => {
+  it('finds HTML and Node.js mentioned in a skills line', () => {
+    const found = findSkillsInText('Skills: HTML, CSS, JavaScript, Node.js, Express');
+    expect(found).toContain('HTML');
+    expect(found).toContain('Node.js');
+  });
+
+  it('does not confuse Java with JavaScript', () => {
+    const found = findSkillsInText('Built apps with JavaScript and TypeScript');
+    expect(found).not.toContain('Java');
+    expect(found).toContain('TypeScript');
+  });
+
+  it('skips ambiguous short tokens like Go in prose', () => {
+    const found = findSkillsInText('I want to go beyond and grow with the team');
+    expect(found).not.toContain('Go');
+  });
+
+  it('returns empty for blank text', () => {
+    expect(findSkillsInText('')).toEqual([]);
+    expect(findSkillsInText('   ')).toEqual([]);
   });
 });

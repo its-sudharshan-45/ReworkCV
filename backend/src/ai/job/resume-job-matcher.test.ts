@@ -219,4 +219,31 @@ describe('matchResumeToJob', () => {
     );
     expect(hasEduRec).toBe(true);
   });
+
+  it('matches required skills evidenced in the resume body even when the skills list missed them', () => {
+    const skillsPoorResume: StructuredResume = {
+      ...SAMPLE_RESUME,
+      skills: ['Git'],
+      summary: 'Frontend developer building pages with HTML and CSS.',
+      experience: [
+        {
+          title: 'Developer',
+          company: 'Web Studio',
+          description: 'Built backends with Node.js and Express backed by PostgreSQL.',
+        },
+      ],
+    };
+    const jd: JobRequirements = {
+      ...SAMPLE_JD,
+      requiredSkills: ['HTML', 'Node.js', 'Kubernetes'],
+      preferredSkills: [],
+    };
+
+    const result = matchResumeToJob(skillsPoorResume, jd);
+    expect(result.matchedSkills).toContain('HTML');
+    expect(result.matchedSkills).toContain('Node.js');
+    expect(result.missingRequiredSkills).toContain('Kubernetes');
+    expect(result.missingRequiredSkills).not.toContain('HTML');
+    expect(result.missingRequiredSkills).not.toContain('Node.js');
+  });
 });
