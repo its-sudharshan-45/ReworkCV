@@ -9,6 +9,7 @@ import type {
   StructuredResume,
 } from './resume-types.js';
 import { parseResumeSections } from '../../modules/resume/resume.section-parser.js';
+import { findSkillsInText } from '../job/skill-normalizer.js';
 
 /**
  * Normalizes raw NER entities label into canonical tag category.
@@ -101,15 +102,24 @@ export function mergeRawEntities(rawEntities: RawNEREntity[]): NormalizedEntitie
   const flush = () => {
     if (currentCategory && currentWords.length > 0) {
       let combined = '';
-      for (const word of currentWords) {
-        if (word.startsWith('##')) {
-          combined += word.slice(2);
-        } else if (word.startsWith(' ')) {
-          combined += ' ' + word.slice(1);
-        } else if (combined && !/^[.,;:!?\-/]$/.test(word) && !combined.endsWith(' ')) {
-          combined += ' ' + word;
-        } else {
-          combined += word;
+      if (currentCategory === 'EMAIL') {
+        // Email tokens must never gain spaces: NER splits addresses into
+        // pieces ("its", ".", "name", "@", ...) and space-joining corrupts
+        // them (". name . in @ gmail ."). Concatenate cleaned pieces instead.
+        combined = currentWords
+          .map((word) => word.replace(/^##/, '').replace(/\s+/g, ''))
+          .join('');
+      } else {
+        for (const word of currentWords) {
+          if (word.startsWith('##')) {
+            combined += word.slice(2);
+          } else if (word.startsWith(' ')) {
+            combined += ' ' + word.slice(1);
+          } else if (combined && !/^[.,;:!?\-/]$/.test(word) && !combined.endsWith(' ')) {
+            combined += ' ' + word;
+          } else {
+            combined += word;
+          }
         }
       }
 
@@ -182,37 +192,56 @@ export function normalizeSkills(skills: string[]): string[] {
   const map = new Map<string, string>();
 
   for (const raw of skills) {
-    const cleaned = raw.trim().replace(/^[\s•\-*:]+/, '').replace(/[\s•\-*:]+$/, '');
-    if (!cleaned || cleaned.length < 2 || cleaned.length > 50) continue;
+    // A single entry may bundle several skills ("HTML/CSS"); split it while
+    // keeping "CI/CD" intact.
+    for (const piece of splitCombinedSkillToken(raw)) {
+      const cleaned = piece.trim().replace(/^[\s•\-*:]+/, '').replace(/[\s•\-*:]+$/, '');
+      if (!cleaned || cleaned.length < 2 || cleaned.length > 50) continue;
 
-    const lower = cleaned.toLowerCase();
+      const lower = cleaned.toLowerCase();
 
-    // Alias map for common skills
-    let canonical = cleaned;
-    if (lower === 'react' || lower === 'reactjs' || lower === 'react.js' || lower === 'react js') canonical = 'React.js';
-    else if (lower === 'node' || lower === 'nodejs' || lower === 'node.js' || lower === 'node js') canonical = 'Node.js';
-    else if (lower === 'js' || lower === 'javascript') canonical = 'JavaScript';
-    else if (lower === 'ts' || lower === 'typescript') canonical = 'TypeScript';
-    else if (lower === 'py' || lower === 'python') canonical = 'Python';
-    else if (lower === 'aws' || lower === 'amazon web services') canonical = 'AWS';
-    else if (lower === 'postgres' || lower === 'postgresql') canonical = 'PostgreSQL';
-    else if (lower === 'mongo' || lower === 'mongodb') canonical = 'MongoDB';
-    else if (lower === 'express' || lower === 'expressjs' || lower === 'express.js' || lower === 'express js') canonical = 'Express.js';
-    else if (lower === 'vue' || lower === 'vuejs' || lower === 'vue.js' || lower === 'vue js') canonical = 'Vue.js';
-    else if (lower === 'next' || lower === 'nextjs' || lower === 'next.js' || lower === 'next js') canonical = 'Next.js';
-    else if (lower === 'c++' || lower === 'cpp') canonical = 'C++';
-    else if (lower === 'c#' || lower === 'csharp') canonical = 'C#';
-    else if (lower === 'go' || lower === 'golang') canonical = 'Go';
-    else if (lower === 'k8s' || lower === 'kubernetes') canonical = 'Kubernetes';
-    else if (lower === 'ci/cd' || lower === 'cicd' || lower === 'ci cd' || lower === 'ci-cd') canonical = 'CI/CD';
+      // Alias map for common skills
+      let canonical = cleaned;
+      if (lower === 'react' || lower === 'reactjs' || lower === 'react.js' || lower === 'react js') canonical = 'React.js';
+      else if (lower === 'node' || lower === 'nodejs' || lower === 'node.js' || lower === 'node js') canonical = 'Node.js';
+      else if (lower === 'js' || lower === 'javascript') canonical = 'JavaScript';
+      else if (lower === 'ts' || lower === 'typescript') canonical = 'TypeScript';
+      else if (lower === 'py' || lower === 'python') canonical = 'Python';
+      else if (lower === 'html' || lower === 'html5') canonical = 'HTML';
+      else if (lower === 'css' || lower === 'css3') canonical = 'CSS';
+      else if (lower === 'aws' || lower === 'amazon web services') canonical = 'AWS';
+      else if (lower === 'postgres' || lower === 'postgresql') canonical = 'PostgreSQL';
+      else if (lower === 'mongo' || lower === 'mongodb') canonical = 'MongoDB';
+      else if (lower === 'express' || lower === 'expressjs' || lower === 'express.js' || lower === 'express js') canonical = 'Express.js';
+      else if (lower === 'vue' || lower === 'vuejs' || lower === 'vue.js' || lower === 'vue js') canonical = 'Vue.js';
+      else if (lower === 'next' || lower === 'nextjs' || lower === 'next.js' || lower === 'next js') canonical = 'Next.js';
+      else if (lower === 'c++' || lower === 'cpp') canonical = 'C++';
+      else if (lower === 'c#' || lower === 'csharp') canonical = 'C#';
+      else if (lower === 'go' || lower === 'golang') canonical = 'Go';
+      else if (lower === 'k8s' || lower === 'kubernetes') canonical = 'Kubernetes';
+      else if (lower === 'ci/cd' || lower === 'cicd' || lower === 'ci cd' || lower === 'ci-cd') canonical = 'CI/CD';
 
-    const key = canonical.toLowerCase();
-    if (!map.has(key) || canonical.includes('.')) {
-      map.set(key, canonical);
+      const key = canonical.toLowerCase();
+      if (!map.has(key) || canonical.includes('.')) {
+        map.set(key, canonical);
+      }
     }
   }
 
   return Array.from(map.values());
+}
+
+/**
+ * Splits a bundled skill token ("HTML/CSS", "React, Node") into pieces while
+ * keeping "CI/CD" intact. Tokens without "/" are returned unchanged.
+ */
+function splitCombinedSkillToken(raw: string): string[] {
+  const protectedToken = raw.replace(/ci\s*\/\s*cd/gi, '__CICD_PROTECTED__');
+  if (!protectedToken.includes('/')) return [raw];
+  return protectedToken
+    .split('/')
+    .map((part) => part.split('__CICD_PROTECTED__').join('CI/CD').trim())
+    .filter(Boolean);
 }
 
 /**
@@ -239,8 +268,13 @@ export function buildStructuredResume(
   const fallbacks = extractContactFallbacks(text);
   const sectionData = parseResumeSections(text);
 
-  // Combine skills extracted by NER and section parser
-  const allSkills = normalizeSkills([...normalized.skills, ...sectionData.skills]);
+  // Combine skills extracted by NER and section parser. As a safety net,
+  // scan the full resume text for known tech skills: PDF exports often lay
+  // the skills line out in ways section parsing alone misses (wide spacing,
+  // slash-joined tokens, uncommon headings), and NER can drop short tokens
+  // like "HTML" or punctuated ones like "Node.js".
+  const textSkills = findSkillsInText(text);
+  const allSkills = normalizeSkills([...normalized.skills, ...sectionData.skills, ...textSkills]);
 
   // Extract Summary section if present
   const summarySection = sectionData.sections.find((s) => s.key === 'summary');

@@ -23,7 +23,7 @@ import {
   type ProjectMatchDetail,
   type ProjectRelevance,
 } from './job-types.js';
-import { findMatchingSkills, normalizeSkill, skillsMatch } from './skill-normalizer.js';
+import { findMatchingSkills, findSkillsInText, normalizeSkill, skillsMatch } from './skill-normalizer.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -76,14 +76,45 @@ function textOverlapScore(source: string, target: string): number {
 // ---------------------------------------------------------------------------
 
 function scoreSkills(resume: StructuredResume, req: JobRequirements): SkillMatchDetail {
-  const { matched: matchedRequired, missing: missingRequired } = findMatchingSkills(
+  let { matched: matchedRequired, missing: missingRequired } = findMatchingSkills(
     resume.skills,
     req.requiredSkills,
   );
-  const { matched: matchedPreferred, missing: missingPreferred } = findMatchingSkills(
+  let { matched: matchedPreferred, missing: missingPreferred } = findMatchingSkills(
     resume.skills,
     req.preferredSkills,
   );
+
+  // Evidence fallback: a required/preferred skill mentioned anywhere in the
+  // resume body (summary, experience, projects, education) counts as present
+  // even when the skills-list extraction missed it. This only ever promotes
+  // skills with genuine boundary-matched textual evidence — never invents.
+  if (missingRequired.length > 0 || missingPreferred.length > 0) {
+    const resumeCorpus = [
+      resume.summary ?? '',
+      resume.skills.join(' '),
+      ...resume.experience.map((e) => `${e.title ?? ''} ${e.company ?? ''} ${e.description ?? ''}`),
+      ...resume.projects.map((p) => `${p.name ?? ''} ${p.description ?? ''} ${(p.technologies ?? []).join(' ')}`),
+      ...resume.education.map((e) => `${e.degree ?? ''} ${e.field ?? ''} ${e.institution ?? ''}`),
+    ].join('\n');
+    const evidenced = new Set(findSkillsInText(resumeCorpus).map((s) => normalizeSkill(s)));
+
+    const promote = (missing: string[], matched: string[]) => {
+      const stillMissing: string[] = [];
+      const promoted: string[] = [];
+      for (const skill of missing) {
+        if (evidenced.has(normalizeSkill(skill))) {
+          promoted.push(skill);
+        } else {
+          stillMissing.push(skill);
+        }
+      }
+      return { matched: [...matched, ...promoted], missing: stillMissing };
+    };
+
+    ({ matched: matchedRequired, missing: missingRequired } = promote(missingRequired, matchedRequired));
+    ({ matched: matchedPreferred, missing: missingPreferred } = promote(missingPreferred, matchedPreferred));
+  }
 
   const totalRequired = req.requiredSkills.length;
   const totalPreferred = req.preferredSkills.length;

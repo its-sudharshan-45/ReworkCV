@@ -1,6 +1,7 @@
 import {
   SECTION_HEADING_PATTERNS,
 } from './resume.constants.js';
+import { splitSkillPhrases } from '../../ai/job/skill-normalizer.js';
 import type { ResumeSection, ResumeSectionKey, StructuredResumeData } from './resume.types.js';
 
 const SECTION_ORDER: ResumeSectionKey[] = [
@@ -15,7 +16,7 @@ const SECTION_ORDER: ResumeSectionKey[] = [
 function cleanHeadingCandidate(line: string): string {
   return line
     .trim()
-    .replace(/^[\s•\-*#_`~>|]+/, '')
+    .replace(/^[\s　•\-*#_`~>|]+/, '')
     .replace(/[:\-#*_`~>|]+$/g, '')
     .trim();
 }
@@ -56,17 +57,47 @@ function isLikelyHeading(line: string): boolean {
 
 function splitIntoItems(content: string): string[] {
   return content
-    .split(/\n{2,}|(?:\n(?=\s*[•\-*]\s))/g)
-    .map((item) => item.replace(/^\s*[•\-*]\s*/, '').trim())
+    .split(/\n{2,}|(?:\n(?=\s*[　•\-*]\s))/g)
+    .map((item) => item.replace(/^\s*[　•\-*]\s*/, '').trim())
     .filter((item) => item.length > 0);
 }
 
+/**
+ * Placeholder that protects "CI/CD" (and spacing variants) while skill lines
+ * are split on "/" — otherwise "CI/CD" would be torn into "CI" + "CD".
+ */
+const CICD_PLACEHOLDER = '__CICD_PROTECTED__';
+
+function protectCicd(value: string): string {
+  return value.replace(/ci\s*\/\s*cd/gi, CICD_PLACEHOLDER);
+}
+
+function restoreCicd(value: string): string {
+  return value.split(CICD_PLACEHOLDER).join('CI/CD');
+}
+
 function extractSkillsFromSection(content: string): string[] {
-  const lines = content
+  const lines = protectCicd(content)
     .split('\n')
-    .flatMap((line) => line.split(/[,;|]/))
-    .map((part) => part.replace(/^\s*[•\-*]\s*/, '').trim())
-    .filter(Boolean);
+    .flatMap((line) => {
+      // Strip "Category:" prefixes ("Frontend: HTML, CSS", "Languages: Java").
+      // Only the leading label is removed; colons elsewhere are preserved.
+      const withoutLabel = line.includes(':')
+        ? line.replace(/^[^:,;|]{1,40}:\s*/, '')
+        : line;
+      return withoutLabel.split(/[,;|/　•·●▪▶→]/);
+    })
+    // PDF exports often separate skills with wide spacing instead of commas.
+    // Dictionary-aware segmentation keeps multi-word skills ("Spring Boot")
+    // intact while splitting space-joined lists ("HTML CSS Node.js").
+    .flatMap((part) => part.split(/ {2,}|\t+/))
+    .flatMap((part) => splitSkillPhrases(part))
+    .map((part) =>
+      restoreCicd(part.replace(/^\s*[　•\-*▪▶→●·#]+\s*/, '').trim())
+        .replace(/[.:;]+$/, '')
+        .trim(),
+    )
+    .filter((skill) => skill.length >= 2 && skill.length <= 50);
 
   const unique = new Map<string, string>();
   for (const skill of lines) {

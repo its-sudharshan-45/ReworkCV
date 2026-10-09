@@ -2,6 +2,7 @@ import { parseJobDescription } from '../../ai/job/job-jd-parser.js';
 import { matchResumeToJob } from '../../ai/job/resume-job-matcher.js';
 import type { JobMatchAnalysis, JobRequirements } from '../../ai/job/job-types.js';
 import type { StructuredResume } from '../../ai/resume/resume-types.js';
+import { buildStructuredResume } from '../../ai/resume/resume-normalizer.js';
 import { logger } from '../../config/logger.js';
 import { AppError } from '../../utils/errors.js';
 import { aiInsightsService } from '../rag/ai-insights.service.js';
@@ -19,6 +20,43 @@ import {
   type JobAnalysisListItem,
 } from './resume-job-analysis.types.js';
 import { ZodError } from 'zod';
+
+/**
+ * Merges skills re-derived from the stored raw resume text (using the
+ * current extractor) into an older stored structured resume. Fixes reports
+ * for resumes processed before extraction improvements, without requiring
+ * a re-upload. Only ever adds skills evidenced in the resume text.
+ */
+export function refreshSkillsFromExtractedText(
+  structuredResume: StructuredResume,
+  extractedText: string,
+): StructuredResume {
+  if (!structuredResume || !Array.isArray(structuredResume.skills)) {
+    return structuredResume;
+  }
+  let refreshed: string[] = [];
+  try {
+    if (typeof extractedText !== 'string' || extractedText.trim().length === 0) {
+      return structuredResume;
+    }
+    const rebuilt = buildStructuredResume(extractedText, []).skills;
+    if (!Array.isArray(rebuilt)) return structuredResume;
+    refreshed = rebuilt;
+  } catch {
+    return structuredResume;
+  }
+  if (refreshed.length === 0) return structuredResume;
+
+  const merged = new Map<string, string>();
+  for (const skill of [...structuredResume.skills, ...refreshed]) {
+    const key = skill.trim().toLowerCase();
+    if (key && !merged.has(key)) {
+      merged.set(key, skill.trim());
+    }
+  }
+  if (merged.size === structuredResume.skills.length) return structuredResume;
+  return { ...structuredResume, skills: Array.from(merged.values()) };
+}
 
 export class ResumeJobAnalysisService {
   constructor(
@@ -143,9 +181,15 @@ export class ResumeJobAnalysisService {
     // Any crash here is a server bug, never a RAG/AI issue: report it as such.
     let jobRequirements: JobRequirements;
     let matchAnalysis: JobMatchAnalysis;
+    let effectiveResume: StructuredResume = structuredResume;
     try {
       jobRequirements = parseJobDescription(validated.jobDescription, validated.jobTitle);
-      matchAnalysis = matchResumeToJob(structuredResume, jobRequirements);
+      // Self-heal resumes processed by older extraction: re-derive skills
+      // from the stored raw text with the current extractor and merge them
+      // in, so previously dropped skills (e.g. "HTML", "Node.js") are not
+      // reported missing. Stored data itself is left untouched.
+      effectiveResume = refreshSkillsFromExtractedText(structuredResume, extractedText);
+      matchAnalysis = matchResumeToJob(effectiveResume, jobRequirements);
     } catch (err) {
       logger.error(
         {
@@ -174,7 +218,7 @@ export class ResumeJobAnalysisService {
         const timeoutMs = getRagConfig().timeoutMs;
         const insightsPromise = aiInsightsService
           .generateInsights({
-            resume: structuredResume,
+            resume: effectiveResume,
             resumeText: resumeRecord.extracted_text ?? undefined,
             jobTitle: validated.jobTitle,
             jobDescription: validated.jobDescription,
