@@ -11,6 +11,13 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   RESUME_STORAGE_BUCKET: z.string().min(1).default('resumes'),
   RESUME_MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(5_242_880),
+  // Max concurrent memory-intensive resume requests (upload + process) per
+  // process. Worst-case RAM ≈ limit × (max file size + parse overhead).
+  RESUME_UPLOAD_MAX_CONCURRENT: z.coerce.number().int().min(1).max(64).default(4),
+  // Defensive cap on extracted plain text per resume. Genuine resumes are
+  // tens of KB; beyond this the document is pathological (e.g. a 5MB PDF of
+  // undelimited text) and would waste NER/CPU cycles and DB storage.
+  RESUME_MAX_EXTRACTED_CHARS: z.coerce.number().int().min(10_000).default(200_000),
 
   // AI Provider Configuration
   GROQ_API_KEY: z.string().optional(),

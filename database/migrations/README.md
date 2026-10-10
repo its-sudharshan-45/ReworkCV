@@ -27,7 +27,7 @@ ReworkCV uses sequential, numbered SQL migrations applied in order against a Sup
 
 | # | File | Purpose |
 |---|---|---|
-| 001 | `001_enable_extensions.sql` | Enables `uuid-ossp`, `pgcrypto` |
+| 001 | `001_enable_extensions.sql` | Enables `pgcrypto`, `pgvector` |
 | 002 | `002_identity_profiles.sql` | `profiles` table with RLS |
 | 003 | `003_resume_intelligence.sql` | `resumes` table with RLS |
 | 012 | `012_grant_permissions.sql` | Supabase role grants |
@@ -38,6 +38,7 @@ ReworkCV uses sequential, numbered SQL migrations applied in order against a Sup
 | 021 | `021_drop_out_of_scope_tables.sql` | Drops aptitude, coding, adaptive & AI model registry tables |
 | 022 | `022_rag_knowledge.sql` | RAG knowledge base (`knowledge_documents`, `knowledge_chunks` + pgvector index) |
 | 023 | `023_ai_coach_conversations.sql` | AI Coach conversations + messages with RLS |
+| 024 | `024_storage_and_least_privilege_hardening.sql` | Private `resumes` bucket + storage RLS; revokes anon table grants |
 
 ## Apply (Supabase SQL Editor or psql)
 
@@ -47,6 +48,13 @@ for f in database/migrations/*.sql; do
   psql "$DATABASE_URL" -f "$f"
 done
 ```
+
+Safe on a fresh database. Do not re-run the whole directory against an
+already-migrated database: `003` (`CREATE TYPE` has no `IF NOT EXISTS` in
+Postgres) and the plain `CREATE POLICY` statements in
+`002/003/014/020/023` fail on duplicates. Forward-only: never edit an
+applied migration, add a new numbered file. See `docs/deployment.md` for
+the full production procedure.
 
 ## Rollback
 

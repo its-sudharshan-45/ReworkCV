@@ -2,10 +2,10 @@
 
 ## Overview
 
-UpSkilr is a monorepo with a Next.js frontend and Express REST API backed by Supabase PostgreSQL.
+Rework CV is a monorepo with a React + Vite frontend and Express REST API backed by Supabase PostgreSQL.
 
 ```text
-frontend (Next.js) ──REST──> backend (Express) ──> Supabase (Auth + PostgreSQL)
+frontend (React + Vite) ──REST──> backend (Express) ──> Supabase (Auth + PostgreSQL)
 ```
 
 ## Backend layers
@@ -28,13 +28,13 @@ Routes → Controllers → Services → Repositories → Database
 ## Authentication
 
 - Supabase Auth issues JWT access tokens
-- Frontend stores session via `@supabase/ssr`
+- Frontend stores session via `@supabase/supabase-js` (persistent session with auto-refresh)
 - Backend validates tokens with Supabase Admin `getUser`
 - Authorization uses authenticated user ID; never trust client-provided `userId`
 
 ## Environment variables
 
-See root `.env.example`. Frontend variables require `NEXT_PUBLIC_` prefix.
+See root `.env.example`. Frontend variables require the `VITE_` prefix.
 
 Backend resume storage:
 
