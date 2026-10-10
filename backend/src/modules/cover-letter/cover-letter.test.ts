@@ -287,4 +287,34 @@ describe('Cover Letter API & Service', () => {
 
     expect(res.status).toBe(204);
   });
+
+  it('rejects generation with a missing resumeId via schema validation', async () => {
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ jobDescription: 'Looking for a senior frontend developer with React experience.' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects generation with an overlong job title instead of truncating silently', async () => {
+    const res = await request(app)
+      .post('/api/v1/cover-letters')
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ resumeId: RESUME_ID, jobTitle: 'x'.repeat(201) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects empty content updates via schema validation', async () => {
+    const res = await request(app)
+      .patch(`/api/v1/cover-letters/${COVER_LETTER_ID}`)
+      .set('Authorization', `Bearer ${ACCESS_TOKEN}`)
+      .send({ content: '' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
