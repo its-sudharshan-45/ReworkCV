@@ -9,6 +9,13 @@ import type { RetrievedChunk, RetrievalOptions } from './rag.types.js';
 // hybrid keyword boost -> dedupe -> topK structured context. Never returns
 // the whole knowledge base. Retrieval results cache only public KB chunks
 // (never user resume data).
+//
+// DEPLOYMENT CONSTRAINT: `retrievalCache` is a process-local Map (TTL +
+// 200-entry cap). The deployment runs a single backend replica
+// (see docs/deployment.md), which keeps it coherent. Mutation endpoints
+// (ingest/reindex/delete) call clearRetrievalCache(); with >1 replica,
+// newly ingested documents could take up to RAG_CACHE_TTL_MS to appear on
+// every instance. Never treat this cache as distributed.
 
 interface CacheEntry {
   expiresAt: number;

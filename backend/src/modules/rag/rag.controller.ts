@@ -9,7 +9,7 @@ import { getRouteParam } from '../../utils/route-params.js';
 import { aiInsightsService } from './ai-insights.service.js';
 import { knowledgeBaseService } from './knowledge-base.service.js';
 import { getRagConfig } from './rag.config.js';
-import { ragRetrievalService } from './retrieval.service.js';
+import { clearRetrievalCache, ragRetrievalService } from './retrieval.service.js';
 import { ragAnalyzeSchema, ragIngestSchema, ragSearchSchema } from './rag.types.js';
 
 function requireAdmin(req: Request): void {
@@ -73,12 +73,18 @@ export async function ingestDocument(req: Request, res: Response): Promise<void>
   requireAdmin(req);
   const input = ragIngestSchema.parse(req.body);
   const result = await knowledgeBaseService.ingestDocument(input);
+  // The retrieval cache is process-local and keyed on query text: a mutated
+  // knowledge base must invalidate it or readers see stale chunks until TTL.
+  // (Placed here rather than in the service to avoid a service <-> retrieval
+  // import cycle; the seed CLI runs offline with no live cache to clear.)
+  if (!result.skippedAsDuplicate) clearRetrievalCache();
   res.status(200).json({ success: true, data: result });
 }
 
 export async function reindexKnowledge(req: Request, res: Response): Promise<void> {
   requireAdmin(req);
   const result = await knowledgeBaseService.ingestSeedCorpus();
+  clearRetrievalCache();
   res.status(200).json({ success: true, data: result });
 }
 
@@ -87,6 +93,7 @@ export async function deleteDocument(req: Request, res: Response): Promise<void>
   const id = getRouteParam(req.params, 'id');
   const deleted = await knowledgeBaseService.deleteDocument(id);
   if (!deleted) throw new AppError('Knowledge document not found', 404, 'NOT_FOUND');
+  clearRetrievalCache();
   logger.info({ documentId: id }, 'Knowledge document deleted');
   res.status(204).send();
 }

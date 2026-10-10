@@ -12,7 +12,7 @@ import {
 
 export const ragRouter = Router();
 
-ragRouter.post('/search', asyncHandler(requireAuth), asyncHandler(searchKnowledge));
+ragRouter.post('/search', aiLimiter, asyncHandler(requireAuth), asyncHandler(searchKnowledge));
 ragRouter.post('/analyze', aiLimiter, asyncHandler(requireAuth), asyncHandler(analyzeWithRag));
 // Admin-only: ingestion / reindex / delete are guarded by x-admin-api-key
 // inside the controller and never exposed to normal users.
