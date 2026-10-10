@@ -6,6 +6,7 @@
  */
 
 import type { JobRequirements } from './job-types.js';
+import { extractSoftSkillsFromText } from './soft-skills.js';
 
 // cspell:ignore kubeflow mlops
 
@@ -238,10 +239,15 @@ export function parseJobDescription(jdText: string, title?: string): JobRequirem
   const allFoundSkills = Array.from(new Set([...requiredSkills, ...preferredSkills]));
   const keywords = extractKeywords(jdText, allFoundSkills);
 
+  // 7. Soft skills — curated vocabulary scan over the whole JD. Independent
+  // of the hard-skill sections above; never affects scoring.
+  const softSkills = extractSoftSkillsFromText(jdText);
+
   return {
     title: title?.trim() || undefined,
     requiredSkills: Array.from(new Set(requiredSkills)),
     preferredSkills: Array.from(new Set(preferredSkills)),
+    softSkills,
     experienceRequirements,
     educationRequirements,
     responsibilities,

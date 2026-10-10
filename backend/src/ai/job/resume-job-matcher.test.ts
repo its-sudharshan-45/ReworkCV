@@ -40,6 +40,7 @@ const SAMPLE_JD: JobRequirements = {
   title: 'Full Stack Developer',
   requiredSkills: ['React', 'Node.js', 'PostgreSQL', 'REST API', 'Git'],
   preferredSkills: ['Docker', 'AWS'],
+  softSkills: [],
   experienceRequirements: ['2+ years of professional experience'],
   educationRequirements: ["Bachelor's degree in Computer Science or related field"],
   responsibilities: [
@@ -141,6 +142,7 @@ describe('matchResumeToJob', () => {
     const emptyJD: JobRequirements = {
       requiredSkills: [],
       preferredSkills: [],
+      softSkills: [],
       experienceRequirements: [],
       educationRequirements: [],
       responsibilities: [],
@@ -245,5 +247,43 @@ describe('matchResumeToJob', () => {
     expect(result.missingRequiredSkills).toContain('Kubernetes');
     expect(result.missingRequiredSkills).not.toContain('HTML');
     expect(result.missingRequiredSkills).not.toContain('Node.js');
+  });
+
+  it('classifies JD soft skills against resume evidence without changing scores', () => {
+    const resumeWithSoft: StructuredResume = {
+      ...SAMPLE_RESUME,
+      skills: [...SAMPLE_RESUME.skills, 'Communication', 'Leadership'],
+      experience: [
+        ...SAMPLE_RESUME.experience,
+        {
+          title: 'Team Lead',
+          company: 'Acme',
+          description: 'Led standups; mentoring engineers and collaborating across teams.',
+        },
+      ],
+    };
+    const jd: JobRequirements = {
+      ...SAMPLE_JD,
+      softSkills: ['Communication', 'Leadership', 'Time management'],
+    };
+    const baseline = matchResumeToJob(SAMPLE_RESUME, { ...jd, softSkills: [] });
+    const result = matchResumeToJob(resumeWithSoft, jd);
+    expect(result.skillDetail.matchedSoft).toEqual(expect.arrayContaining(['Communication', 'Leadership']));
+    expect(result.skillDetail.missingSoft).toContain('Time management');
+    // Soft-skill reporting is scoring-neutral.
+    expect(result.matchScore).toBe(baseline.matchScore);
+    expect(result.skillDetail.scorePercent).toBe(baseline.skillDetail.scorePercent);
+    expect(result.breakdown).toEqual(baseline.breakdown);
+  });
+
+  it('never reports hard technical skills as soft skills', () => {
+    const jd: JobRequirements = {
+      ...SAMPLE_JD,
+      softSkills: ['Communication'],
+    };
+    const result = matchResumeToJob(SAMPLE_RESUME, jd);
+    for (const s of [...result.skillDetail.matchedSoft, ...result.skillDetail.missingSoft]) {
+      expect(['react', 'typescript', 'docker', 'aws', 'node.js']).not.toContain(s.toLowerCase());
+    }
   });
 });

@@ -24,6 +24,7 @@ import {
   type ProjectRelevance,
 } from './job-types.js';
 import { findMatchingSkills, findSkillsInText, normalizeSkill, skillsMatch } from './skill-normalizer.js';
+import { canonicalizeSoftSkill, extractSoftSkillsFromText } from './soft-skills.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,6 +33,17 @@ import { findMatchingSkills, findSkillsInText, normalizeSkill, skillsMatch } fro
 function clamp(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+/** Full free-text corpus of a resume (summary, skills, experience, projects, education). */
+function buildResumeCorpus(resume: StructuredResume): string {
+  return [
+    resume.summary ?? '',
+    resume.skills.join(' '),
+    ...resume.experience.map((e) => `${e.title ?? ''} ${e.company ?? ''} ${e.description ?? ''}`),
+    ...resume.projects.map((p) => `${p.name ?? ''} ${p.description ?? ''} ${(p.technologies ?? []).join(' ')}`),
+    ...resume.education.map((e) => `${e.degree ?? ''} ${e.field ?? ''} ${e.institution ?? ''}`),
+  ].join('\n');
 }
 
 /** Extract approximate years from experience entries */
@@ -90,13 +102,7 @@ function scoreSkills(resume: StructuredResume, req: JobRequirements): SkillMatch
   // even when the skills-list extraction missed it. This only ever promotes
   // skills with genuine boundary-matched textual evidence — never invents.
   if (missingRequired.length > 0 || missingPreferred.length > 0) {
-    const resumeCorpus = [
-      resume.summary ?? '',
-      resume.skills.join(' '),
-      ...resume.experience.map((e) => `${e.title ?? ''} ${e.company ?? ''} ${e.description ?? ''}`),
-      ...resume.projects.map((p) => `${p.name ?? ''} ${p.description ?? ''} ${(p.technologies ?? []).join(' ')}`),
-      ...resume.education.map((e) => `${e.degree ?? ''} ${e.field ?? ''} ${e.institution ?? ''}`),
-    ].join('\n');
+    const resumeCorpus = buildResumeCorpus(resume);
     const evidenced = new Set(findSkillsInText(resumeCorpus).map((s) => normalizeSkill(s)));
 
     const promote = (missing: string[], matched: string[]) => {
@@ -137,7 +143,43 @@ function scoreSkills(resume: StructuredResume, req: JobRequirements): SkillMatch
     missingRequired,
     matchedPreferred,
     missingPreferred,
+    ...matchSoftSkills(resume, req),
     scorePercent: clamp(score),
+  };
+}
+
+/**
+ * Soft-skill cross-check: which JD soft skills (communication, teamwork, …)
+ * are evidenced anywhere in the resume (skills list or free text) and which
+ * are missing. Classification only — scoring-neutral by design: the ATS
+ * weights above never see these fields.
+ */
+function matchSoftSkills(
+  resume: StructuredResume,
+  req: JobRequirements,
+): { matchedSoft: string[]; missingSoft: string[] } {
+  const jdSoft = Array.isArray(req.softSkills) ? req.softSkills : [];
+  if (jdSoft.length === 0) return { matchedSoft: [], missingSoft: [] };
+
+  const evidenced = new Set<string>();
+  for (const skill of resume.skills) {
+    const canonical = canonicalizeSoftSkill(skill);
+    if (canonical) evidenced.add(canonical);
+  }
+  for (const soft of extractSoftSkillsFromText(buildResumeCorpus(resume))) {
+    evidenced.add(soft);
+  }
+
+  const matchedSoft: string[] = [];
+  const missingSoft: string[] = [];
+  for (const soft of jdSoft) {
+    const canonical = canonicalizeSoftSkill(soft) ?? soft;
+    if (evidenced.has(canonical)) matchedSoft.push(canonical);
+    else missingSoft.push(canonical);
+  }
+  return {
+    matchedSoft: Array.from(new Set(matchedSoft)),
+    missingSoft: Array.from(new Set(missingSoft)),
   };
 }
 
@@ -462,6 +504,15 @@ export function matchResumeToJob(
   resume: StructuredResume,
   requirements: JobRequirements,
 ): JobMatchAnalysis {
+  // Fail explicitly on corrupt inputs (e.g. legacy rows with null arrays)
+  // instead of throwing an opaque TypeError deep in scoring. The service
+  // layer maps this to 500 DETERMINISTIC_ANALYSIS_FAILED.
+  if (!resume || !Array.isArray(resume.skills) || !Array.isArray(resume.experience)) {
+    throw new Error('Invalid structured resume: skills and experience must be arrays');
+  }
+  if (!requirements || !Array.isArray(requirements.requiredSkills) || !Array.isArray(requirements.preferredSkills)) {
+    throw new Error('Invalid job requirements: requiredSkills and preferredSkills must be arrays');
+  }
   const skillDetail = scoreSkills(resume, requirements);
   const experienceDetail = scoreExperience(resume, requirements);
   const educationDetail = scoreEducation(resume, requirements);

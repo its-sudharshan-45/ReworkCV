@@ -52,6 +52,8 @@ export interface JobRequirements {
   title?: string;
   requiredSkills: string[];
   preferredSkills: string[];
+  /** Soft skills requested in the JD (communication, teamwork, …). Scoring-neutral. */
+  softSkills: string[];
   experienceRequirements: string[];
   educationRequirements: string[];
   responsibilities: string[];
@@ -66,6 +68,9 @@ export interface SkillMatchDetail {
   missingRequired: string[];
   matchedPreferred: string[];
   missingPreferred: string[];
+  /** JD soft skills evidenced in the resume / missing. Scoring-neutral. */
+  matchedSoft: string[];
+  missingSoft: string[];
   scorePercent: number;
 }
 

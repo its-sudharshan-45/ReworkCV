@@ -52,6 +52,23 @@ describe('parseJobDescription', () => {
     expect(lowerPref.some((s) => s.includes('docker'))).toBe(true);
   });
 
+  it('extracts soft skills without touching hard-skill lists', () => {
+    const jd = [
+      'Senior Frontend Engineer.',
+      'Must have excellent communication skills and a collaborative, team-player mindset.',
+      'Required Skills',
+      'React',
+      'TypeScript',
+    ].join('\n');
+    const req = parseJobDescription(jd, 'Frontend Engineer');
+    expect(req.softSkills).toContain('Communication');
+    expect(req.softSkills).toContain('Teamwork');
+    // Soft-skill extraction never leaks into hard-skill lists.
+    for (const s of [...req.requiredSkills, ...req.preferredSkills]) {
+      expect(s.toLowerCase()).not.toContain('communication');
+    }
+  });
+
   it('extracts experience requirements with year pattern', () => {
     const req = parseJobDescription(FULL_STACK_JD);
     expect(req.experienceRequirements.length).toBeGreaterThan(0);
