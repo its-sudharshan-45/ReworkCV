@@ -120,6 +120,15 @@ export async function exportReportPdf(req: Request, res: Response): Promise<void
       ? req.query.analysisId.trim()
       : null;
 
+  // Fail fast on malformed identifiers so a typo surfaces as 400
+  // VALIDATION_ERROR instead of a misleading 404.
+  if (
+    requestedAnalysisId &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedAnalysisId)
+  ) {
+    throw new AppError('Invalid analysis identifier', 400, 'VALIDATION_ERROR');
+  }
+
   let analysisData = null;
   let jobTitle = null;
   if (requestedAnalysisId) {

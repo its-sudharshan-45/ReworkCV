@@ -864,6 +864,16 @@ export class ResumeReportExportService {
           chips(report.skills.missingPreferred, AMBER_TINT, AMBER_LINE, AMBER, MUTED, ROW_TINT, RULE);
           gap(SPACE.blockAfter);
         }
+        if (report.skills.matchedSoft?.length) {
+          subhead('Matched soft skills', GREEN_DARK, 40);
+          chips(report.skills.matchedSoft, GREEN_TINT, GREEN_LINE, GREEN_DARK, MUTED, ROW_TINT, RULE);
+          gap(SPACE.blockAfter);
+        }
+        if (report.skills.missingSoft?.length) {
+          subhead('Missing soft skills', AMBER, 40);
+          chips(report.skills.missingSoft, AMBER_TINT, AMBER_LINE, AMBER, MUTED, ROW_TINT, RULE);
+          gap(SPACE.blockAfter);
+        }
       }
 
       // ---- Format (only existing checks) ----

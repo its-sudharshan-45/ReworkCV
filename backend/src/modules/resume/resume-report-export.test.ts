@@ -98,6 +98,21 @@ describe('resume report PDF export', () => {
     expect(parsed.text).toContain('Backend Engineer'.slice(0, 7));
   });
 
+  it('renders soft-skill sections without mislabeling technical skills', async () => {
+    const { default: pdfParse } = await import('pdf-parse');
+    const analysis = makeAnalysis();
+    analysis.skillDetail.matchedPreferred = ['Docker', 'AWS'];
+    analysis.skillDetail.missingPreferred = ['TypeScript'];
+    analysis.skillDetail.matchedSoft = ['Communication'];
+    analysis.skillDetail.missingSoft = ['Leadership'];
+    const buffer = await resumeReportExportService.generateReportPdf(makeResume(), analysis);
+    const parsed = (await (pdfParse as unknown as (b: Buffer) => Promise<{ text: string }>)(buffer)) as { text: string };
+    expect(parsed.text).toContain('Matched soft skills');
+    expect(parsed.text).toContain('Missing soft skills');
+    expect(parsed.text).toContain('Communication');
+    expect(parsed.text).toContain('Leadership');
+  });
+
   it('contains no forbidden values', async () => {
     const { default: pdfParse } = await import('pdf-parse');
     const buffer = await resumeReportExportService.generateReportPdf(makeResume(), makeAnalysis());

@@ -158,6 +158,10 @@ export interface ReportSkills {
   missingRequired?: string[];
   matchedPreferred?: string[];
   missingPreferred?: string[];
+  /** JD soft skills evidenced in the resume (communication, …). */
+  matchedSoft?: string[];
+  /** JD soft skills not evidenced in the resume. */
+  missingSoft?: string[];
 }
 
 export interface ReportFormat {
@@ -340,10 +344,16 @@ export function buildReportData(input: BuildReportInput): ReportData {
       const mir = sanitizeList(skillDetail.missingRequired);
       const mp = sanitizeList(skillDetail.matchedPreferred);
       const mip = sanitizeList(skillDetail.missingPreferred);
+      const ms = sanitizeList(skillDetail.matchedSoft);
+      const mis = sanitizeList(skillDetail.missingSoft);
       if (mr.length > 0) skills.matchedRequired = mr;
       if (mir.length > 0) skills.missingRequired = mir;
       if (mp.length > 0) skills.matchedPreferred = mp;
       if (mip.length > 0) skills.missingPreferred = mip;
+      // Tolerant read: analyses persisted before soft-skill reporting omit
+      // these fields and simply leave the section out of the report.
+      if (ms.length > 0) skills.matchedSoft = ms;
+      if (mis.length > 0) skills.missingSoft = mis;
       if (Object.keys(skills).length > 0) report.skills = skills;
     }
 

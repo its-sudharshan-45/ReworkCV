@@ -16,7 +16,7 @@ const SECTION_ORDER: ResumeSectionKey[] = [
 function cleanHeadingCandidate(line: string): string {
   return line
     .trim()
-    .replace(/^[\s　•\-*#_`~>|]+/, '')
+    .replace(/^[\s\u3000•\-*#_`~>|]+/, '')
     .replace(/[:\-#*_`~>|]+$/g, '')
     .trim();
 }
@@ -57,8 +57,8 @@ function isLikelyHeading(line: string): boolean {
 
 function splitIntoItems(content: string): string[] {
   return content
-    .split(/\n{2,}|(?:\n(?=\s*[　•\-*]\s))/g)
-    .map((item) => item.replace(/^\s*[　•\-*]\s*/, '').trim())
+    .split(/\n{2,}|(?:\n(?=\s*[\u3000•\-*]\s))/g)
+    .map((item) => item.replace(/^\s*[\u3000•\-*]\s*/, '').trim())
     .filter((item) => item.length > 0);
 }
 
@@ -85,7 +85,7 @@ function extractSkillsFromSection(content: string): string[] {
       const withoutLabel = line.includes(':')
         ? line.replace(/^[^:,;|]{1,40}:\s*/, '')
         : line;
-      return withoutLabel.split(/[,;|/　•·●▪▶→]/);
+      return withoutLabel.split(/[,;|/\u3000•·●▪▶→]/);
     })
     // PDF exports often separate skills with wide spacing instead of commas.
     // Dictionary-aware segmentation keeps multi-word skills ("Spring Boot")
@@ -93,7 +93,7 @@ function extractSkillsFromSection(content: string): string[] {
     .flatMap((part) => part.split(/ {2,}|\t+/))
     .flatMap((part) => splitSkillPhrases(part))
     .map((part) =>
-      restoreCicd(part.replace(/^\s*[　•\-*▪▶→●·#]+\s*/, '').trim())
+      restoreCicd(part.replace(/^\s*[\u3000•\-*▪▶→●·#]+\s*/, '').trim())
         .replace(/[.:;]+$/, '')
         .trim(),
     )

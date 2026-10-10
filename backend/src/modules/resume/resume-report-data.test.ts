@@ -59,6 +59,8 @@ function makeAnalysis(overrides: Partial<JobMatchAnalysis> = {}): JobMatchAnalys
       missingRequired: ['GraphQL'],
       matchedPreferred: [],
       missingPreferred: ['Docker'],
+      matchedSoft: ['Communication'],
+      missingSoft: ['Leadership'],
       scorePercent: 70,
     },
     experienceDetail: {
@@ -102,6 +104,25 @@ describe('REPORT_DATA builder', () => {
     expect(report.skills).toBeUndefined();
     expect(report.format).toBeUndefined();
     expect(report.action_plan).toBeUndefined();
+  });
+
+  it('passes soft skills through to the report and PDF data', () => {
+    const report = buildReportData({ resume: makeResume(), analysis: makeAnalysis() });
+    expect(report.skills?.matchedSoft).toEqual(['Communication']);
+    expect(report.skills?.missingSoft).toEqual(['Leadership']);
+    // Preferred technical skills stay separate from soft skills.
+    expect(report.skills?.missingPreferred).toEqual(['Docker']);
+    expect(report.skills?.matchedSoft).not.toContain('Docker');
+  });
+
+  it('omits soft-skill sections for pre-soft-skill analyses', () => {
+    const analysis = makeAnalysis();
+    delete (analysis.skillDetail as { matchedSoft?: unknown }).matchedSoft;
+    delete (analysis.skillDetail as { missingSoft?: unknown }).missingSoft;
+    const report = buildReportData({ resume: makeResume(), analysis });
+    expect(report.skills?.matchedSoft).toBeUndefined();
+    expect(report.skills?.missingSoft).toBeUndefined();
+    expect(report.skills?.missingPreferred).toEqual(['Docker']);
   });
 
   it('handles empty sections gracefully', () => {

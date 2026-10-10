@@ -15,16 +15,33 @@ import {
   exportReportPdf,
 } from './resume.controller.js';
 import { resumeUpload } from './resume.upload.middleware.js';
+import { limitUploadConcurrency } from './resume.concurrency.js';
 
 export const resumeRouter = Router();
 
-resumeRouter.post('/', authBurstLimiter, asyncHandler(requireAuth), resumeUpload, asyncHandler(uploadResume));
+// Upload + process hold whole documents in RAM: the concurrency guard runs
+// before multer parsing (upload) and before storage download (process) so
+// excess load fails fast with 429 instead of OOMing the process.
+resumeRouter.post(
+  '/',
+  authBurstLimiter,
+  asyncHandler(requireAuth),
+  limitUploadConcurrency,
+  resumeUpload,
+  asyncHandler(uploadResume),
+);
 resumeRouter.get('/', asyncHandler(requireAuth), asyncHandler(listResumes));
 resumeRouter.get('/:id', asyncHandler(requireAuth), asyncHandler(getResume));
-resumeRouter.post('/:id/process', aiLimiter, asyncHandler(requireAuth), asyncHandler(processResume));
+resumeRouter.post(
+  '/:id/process',
+  aiLimiter,
+  asyncHandler(requireAuth),
+  limitUploadConcurrency,
+  asyncHandler(processResume),
+);
 resumeRouter.post('/:id/analyze-job', aiLimiter, asyncHandler(requireAuth), asyncHandler(analyzeResumeForJob));
 resumeRouter.get('/:id/job-analyses', asyncHandler(requireAuth), asyncHandler(listJobAnalyses));
 resumeRouter.get('/:id/job-analyses/latest', asyncHandler(requireAuth), asyncHandler(getLatestJobAnalysis));
 resumeRouter.get('/:id/job-analyses/:analysisId', asyncHandler(requireAuth), asyncHandler(getJobAnalysis));
-resumeRouter.get('/:id/report/pdf', asyncHandler(requireAuth), asyncHandler(exportReportPdf));
+resumeRouter.get('/:id/report/pdf', aiLimiter, asyncHandler(requireAuth), asyncHandler(exportReportPdf));
 resumeRouter.delete('/:id', asyncHandler(requireAuth), asyncHandler(deleteResume));

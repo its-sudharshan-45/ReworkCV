@@ -36,7 +36,8 @@ export type ErrorCode =
   | 'EMBEDDING_FAILED'
   | 'AI_PROVIDER_FAILED'
   | 'AI_SCHEMA_VALIDATION_FAILED'
-  | 'REPORT_BUILD_FAILED';
+  | 'REPORT_BUILD_FAILED'
+  | 'RATE_LIMITED';
 
 export class AppError extends Error {
   readonly statusCode: number;
