@@ -95,4 +95,41 @@ describe('ResumeAnalysisReport', () => {
     render(<ResumeAnalysisReport analysis={makeAnalysis()} resume={makeResume()} jobTitle={longTitle} />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Senior Backend Engineer');
   });
+
+  it('lists hard technical skills under Preferred Skills, never Soft Skills', () => {
+    const analysis = makeAnalysis();
+    analysis.skillDetail.matchedPreferred = ['Docker'];
+    analysis.skillDetail.missingPreferred = ['AWS'];
+    analysis.skillDetail.matchedSoft = ['Communication'];
+    analysis.skillDetail.missingSoft = ['Leadership'];
+    render(<ResumeAnalysisReport analysis={analysis} resume={makeResume()} jobTitle="Backend Engineer" />);
+
+    const softTable = screen.getByRole('heading', { name: 'Soft Skills' }).closest('div');
+    expect(softTable?.textContent).toContain('Communication');
+    expect(softTable?.textContent).toContain('Leadership');
+    expect(softTable?.textContent).not.toContain('Docker');
+    expect(softTable?.textContent).not.toContain('AWS');
+
+    const preferredTable = screen.getByRole('heading', { name: 'Preferred Skills' }).closest('div');
+    expect(preferredTable?.textContent).toContain('Docker');
+    expect(preferredTable?.textContent).toContain('AWS');
+    expect(preferredTable?.textContent).not.toContain('Communication');
+  });
+
+  it('splits legacy preferred lists via vocabulary fallback when soft fields are absent', () => {
+    const analysis = makeAnalysis();
+    // Pre-soft-skill record shape: no matchedSoft/missingSoft at all.
+    analysis.skillDetail.matchedPreferred = ['Docker', 'Communication'];
+    analysis.skillDetail.missingPreferred = ['AWS', 'Leadership'];
+    render(<ResumeAnalysisReport analysis={analysis} resume={makeResume()} jobTitle="Backend Engineer" />);
+
+    const softTable = screen.getByRole('heading', { name: 'Soft Skills' }).closest('div');
+    expect(softTable?.textContent).toContain('Communication');
+    expect(softTable?.textContent).toContain('Leadership');
+    expect(softTable?.textContent).not.toContain('Docker');
+
+    const preferredTable = screen.getByRole('heading', { name: 'Preferred Skills' }).closest('div');
+    expect(preferredTable?.textContent).toContain('Docker');
+    expect(preferredTable?.textContent).toContain('AWS');
+  });
 });

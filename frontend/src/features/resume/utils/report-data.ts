@@ -45,6 +45,8 @@ export interface ReportData {
   missingRequired: string[];
   matchedPreferred: string[];
   missingPreferred: string[];
+  matchedSoft: string[];
+  missingSoft: string[];
   keywordsFound: string[];
   keywordsMissing: string[];
   recommendations: Array<{ priority: string; text: string; impact?: string }>;
@@ -158,6 +160,8 @@ export function buildReportData(
     missingRequired: sanitizeList(analysis?.skillDetail?.missingRequired),
     matchedPreferred: sanitizeList(analysis?.skillDetail?.matchedPreferred),
     missingPreferred: sanitizeList(analysis?.skillDetail?.missingPreferred),
+    matchedSoft: sanitizeList(analysis?.skillDetail?.matchedSoft),
+    missingSoft: sanitizeList(analysis?.skillDetail?.missingSoft),
     keywordsFound: sanitizeList(analysis?.keywordDetail?.found),
     keywordsMissing: sanitizeList(analysis?.keywordDetail?.missing),
     recommendations,

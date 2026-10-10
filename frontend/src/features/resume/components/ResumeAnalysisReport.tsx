@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import type { JobMatchAnalysis, ResumeDetail } from '@/features/resume/types/resume';
 import { buildReportData, getCategoryScores } from '@/features/resume/utils/report-data';
+import { isSoftSkillLabel } from '@/features/resume/utils/soft-skills';
 import { AICoach } from '@/features/ai-coach/components/AICoach';
 import type { AiCoachChatMessage } from '@/features/ai-coach/api/ai-coach.api';
 
@@ -708,7 +709,36 @@ export function ResumeAnalysisReport({
 
   const measurableCount = report.keywordsMissing.length;
   const hardMissing = missingRequired.length;
-  const softMissing = missingPreferred.length + Math.min(buzzwordCount, 4);
+
+  // Soft skills come from the backend's authoritative soft-skill reporting
+  // (report.matchedSoft/missingSoft). For analyses persisted before that
+  // existed, fall back to splitting the legacy "preferred" lists with the
+  // client-side vocabulary mirror — genuine soft skills (Communication,
+  // Leadership, …) stay soft, technical nice-to-haves (React, Docker, …)
+  // move to their own Preferred Skills table instead of being mislabeled.
+  const softMatched: string[] = useMemo(
+    () =>
+      report.matchedSoft.length > 0
+        ? report.matchedSoft
+        : matchedPreferred.filter((s) => isSoftSkillLabel(s)),
+    [report.matchedSoft, matchedPreferred],
+  );
+  const softMissingList: string[] = useMemo(
+    () =>
+      report.missingSoft.length > 0
+        ? report.missingSoft
+        : missingPreferred.filter((s) => isSoftSkillLabel(s)),
+    [report.missingSoft, missingPreferred],
+  );
+  const preferredMatched: string[] = useMemo(
+    () => matchedPreferred.filter((s) => !isSoftSkillLabel(s)),
+    [matchedPreferred],
+  );
+  const preferredMissing: string[] = useMemo(
+    () => missingPreferred.filter((s) => !isSoftSkillLabel(s)),
+    [missingPreferred],
+  );
+  const softMissing = softMissingList.length + Math.min(buzzwordCount, 4);
 
   const hardRows: SkillRow[] = useMemo(
     () => [
@@ -730,13 +760,13 @@ export function ResumeAnalysisReport({
 
   const softRows: SkillRow[] = useMemo(() => {
     const rows: SkillRow[] = [
-      ...matchedPreferred.map((s) => ({
+      ...softMatched.map((s) => ({
         skill: s,
         required: false,
         resumeCount: 1,
         detail: 'Detected in your resume. Reinforce it with a specific example or outcome.',
       })),
-      ...missingPreferred.map((s) => ({
+      ...softMissingList.map((s) => ({
         skill: s,
         required: false,
         resumeCount: 0,
@@ -755,7 +785,25 @@ export function ResumeAnalysisReport({
       });
     }
     return rows;
-  }, [matchedPreferred, missingPreferred, report.responsibilitiesUnmatched]);
+  }, [softMatched, softMissingList, report.responsibilitiesUnmatched]);
+
+  const preferredRows: SkillRow[] = useMemo(
+    () => [
+      ...preferredMatched.map((s) => ({
+        skill: s,
+        required: false,
+        resumeCount: 1,
+        detail: 'Detected in your resume. Keep it visible — it strengthens your fit for this role.',
+      })),
+      ...preferredMissing.map((s) => ({
+        skill: s,
+        required: false,
+        resumeCount: 0,
+        detail: 'Listed as a plus for this role but not detected in your resume. Add it only where you have genuine experience.',
+      })),
+    ],
+    [preferredMatched, preferredMissing],
+  );
 
   const bulletAnalysis = useMemo(() => analysis?.aiInsights?.bulletAnalysis ?? [], [analysis]);
   const measurableBoxes: string[] = useMemo(() => {
@@ -1210,9 +1258,10 @@ export function ResumeAnalysisReport({
                   </div>
                 </div>
 
-                {hardRows.length > 0 || softRows.length > 0 ? (
+                {hardRows.length > 0 || preferredRows.length > 0 || softRows.length > 0 ? (
                   <>
                     {hardRows.length > 0 && <SkillsTable title="Hard Skills" rows={hardRows} />}
+                    {preferredRows.length > 0 && <SkillsTable title="Preferred Skills" rows={preferredRows} />}
                     {softRows.length > 0 && <SkillsTable title="Soft Skills" rows={softRows} />}
                     <p className="mt-3 flex items-start gap-1.5 text-[12px] text-slate-500">
                       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />

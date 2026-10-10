@@ -280,7 +280,7 @@ export function AICoach({
                     type="button"
                     onClick={() => handleCopy(m.id, m.content)}
                     aria-label="Copy response"
-                    className="inline-flex cursor-pointer items-center gap-1 rounded p-1 text-[11px] font-semibold text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded p-1 text-[11px] font-semibold text-slate-400 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus:opacity-100 focus-visible:opacity-100 max-sm:opacity-100"
                   >
                     {copiedId === m.id ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                     {copiedId === m.id ? 'Copied' : 'Copy'}

@@ -143,6 +143,10 @@ export interface SkillMatchDetail {
   missingRequired: string[];
   matchedPreferred: string[];
   missingPreferred: string[];
+  /** JD soft skills evidenced in the resume. Absent on pre-soft-skill analyses. */
+  matchedSoft?: string[];
+  /** JD soft skills not evidenced in the resume. Absent on pre-soft-skill analyses. */
+  missingSoft?: string[];
   scorePercent: number;
 }
 
