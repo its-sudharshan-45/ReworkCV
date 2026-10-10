@@ -133,8 +133,13 @@ describe('Upload resource protection', () => {
     first.res.emit('close');
     expect(getActiveUploadCount()).toBe(0);
 
+    // The permit is tied to the response lifecycle: an early request-stream
+    // close (small body fully received while storage upload still runs) must
+    // NOT release the permit.
     const second = occupyPermit();
     second.req.emit('close');
+    expect(getActiveUploadCount()).toBe(1);
+    second.res.emit('finish');
     expect(getActiveUploadCount()).toBe(0);
   });
 

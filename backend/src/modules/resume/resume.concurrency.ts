@@ -33,7 +33,7 @@ export function resetUploadConcurrencyForTests(): void {
   activeUploads = 0;
 }
 
-export function limitUploadConcurrency(req: Request, res: Response, next: NextFunction): void {
+export function limitUploadConcurrency(_req: Request, res: Response, next: NextFunction): void {
   if (activeUploads >= getUploadConcurrencyLimit()) {
     // Tell well-behaved clients (and the frontend retry UI) when to come back.
     res.setHeader('Retry-After', '5');
@@ -55,12 +55,14 @@ export function limitUploadConcurrency(req: Request, res: Response, next: NextFu
     activeUploads = Math.max(0, activeUploads - 1);
   };
 
-  // Exactly-once release across every terminal path: normal completion
-  // (finish), aborted/errored responses (close), and client disconnects
-  // mid-upload (req close). The guard flag makes duplicate events safe.
+  // Exactly-once release on every terminal path: normal completion (finish)
+  // and aborted/errored responses or client disconnects (close). Release is
+  // tied to the RESPONSE lifecycle — not the request stream — because the
+  // in-RAM file buffer is held through storage upload and DB insert, long
+  // after a small request body has been fully received (req 'close' fires
+  // early and must not release the permit).
   res.on('finish', release);
   res.on('close', release);
-  req.on('close', release);
 
   next();
 }
