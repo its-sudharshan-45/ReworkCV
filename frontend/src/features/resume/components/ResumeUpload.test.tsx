@@ -23,7 +23,28 @@ describe('ResumeUpload', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     expect(
-      await screen.findByText(/Only PDF, DOC, DOCX, and plain text resumes are supported/i),
+      await screen.findByText(/Unsupported file format\. Please upload a PDF or TXT resume/i),
+    ).toBeTruthy();
+  });
+
+  it('shows validation error for Word documents', async () => {
+    const onUploadAndAnalyze = vi.fn();
+    render(
+      <ResumeUpload
+        onUploadAndAnalyze={onUploadAndAnalyze}
+        isUploading={false}
+        isProcessing={false}
+      />,
+    );
+
+    const input = screen.getByLabelText('Upload resume');
+    const file = new File(['content'], 'resume.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      await screen.findByText(/Unsupported file format\. Please upload a PDF or TXT resume/i),
     ).toBeTruthy();
   });
 

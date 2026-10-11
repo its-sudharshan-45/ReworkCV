@@ -305,7 +305,7 @@ export function ResumeUpload({
               <div className="space-y-1 pt-1 text-[11px] text-slate-500 sm:text-xs dark:text-slate-400">
                 <p className="flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
-                  <span>Supported formats: .pdf, .doc, .docx. Max size: 5 MB.</span>
+                  <span>Supported formats: .pdf, .txt. Max size: 5 MB.</span>
                 </p>
                 <p className="flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
@@ -410,7 +410,7 @@ export function ResumeUpload({
             <input
               ref={jdFileInputRef}
               type="file"
-              accept=".txt,.doc,.docx,.pdf"
+              accept=".txt,.pdf"
               className="hidden"
               onChange={(e) => handleJdFileUpload(e.target.files?.[0] ?? null)}
             />
