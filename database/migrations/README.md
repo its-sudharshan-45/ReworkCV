@@ -39,6 +39,7 @@ ReworkCV uses sequential, numbered SQL migrations applied in order against a Sup
 | 022 | `022_rag_knowledge.sql` | RAG knowledge base (`knowledge_documents`, `knowledge_chunks` + pgvector index) |
 | 023 | `023_ai_coach_conversations.sql` | AI Coach conversations + messages with RLS |
 | 024 | `024_storage_and_least_privilege_hardening.sql` | Private `resumes` bucket + storage RLS; revokes anon table grants |
+| 025 | `025_resume_bucket_mime_restriction.sql` | Restricts `resumes` bucket MIME types to PDF + TXT (Word support discontinued) |
 
 ## Apply (Supabase SQL Editor or psql)
 

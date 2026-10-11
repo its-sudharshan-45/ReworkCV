@@ -55,6 +55,20 @@ DELETE /api/v1/resumes/:id          delete record + storage object
 
 Resume files are stored in private Supabase Storage. Processing uses deterministic section parsing and scoring (no LLM).
 
+Supported upload formats: PDF (`application/pdf`) and TXT (`text/plain`) only.
+Word documents (`.doc`/`.docx`) are rejected at upload validation with
+`Unsupported file format. Please upload a PDF or TXT resume.`
+
+PDF parsing uses `pdf-parse` 1.x (old bundled pdf.js). Known limitation: PDFs
+with compressed cross-reference streams / object streams — e.g. PDFKit
+defaults and some modern generators — fail with `bad XRef entry`. Such files
+are rejected gracefully with `Failed to extract text from PDF resume: file may
+be corrupted or unreadable` (HTTP 400); they never produce a misleading
+report from empty extraction output. A passing real-PDF fixture
+(`backend/src/modules/resume/fixtures/valid-resume.pdf`, generated with
+PDFKit `PDFVersion 1.4 + compress:false`) does not imply every PDF generator
+is supported.
+
 ## Job API (Phase 3)
 
 Authenticated endpoints:
