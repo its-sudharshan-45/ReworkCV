@@ -36,7 +36,7 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export const SUPPORTED_RESUME_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt'];
+export const SUPPORTED_RESUME_EXTENSIONS = ['.pdf', '.txt'];
 
 export function validateResumeFile(file: File | null, maxBytes = 5_242_880): string | null {
   if (!file) {
@@ -45,7 +45,7 @@ export function validateResumeFile(file: File | null, maxBytes = 5_242_880): str
 
   const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
   if (!SUPPORTED_RESUME_EXTENSIONS.includes(extension)) {
-    return 'Only PDF, DOC, DOCX, and plain text resumes are supported.';
+    return 'Unsupported file format. Please upload a PDF or TXT resume.';
   }
 
   if (file.size <= 0) {

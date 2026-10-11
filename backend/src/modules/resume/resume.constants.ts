@@ -1,13 +1,6 @@
-// cspell:ignore msword openxmlformats officedocument wordprocessingml
-export const SUPPORTED_RESUME_MIME_TYPES = [
-  'application/pdf',
-  'text/plain',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/octet-stream',
-] as const;
+export const SUPPORTED_RESUME_MIME_TYPES = ['application/pdf', 'text/plain'] as const;
 
-export const SUPPORTED_RESUME_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx'] as const;
+export const SUPPORTED_RESUME_EXTENSIONS = ['.pdf', '.txt'] as const;
 
 export const SECTION_HEADING_PATTERNS: Record<string, RegExp[]> = {
   summary: [

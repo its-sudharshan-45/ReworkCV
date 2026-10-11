@@ -1,4 +1,3 @@
-// cspell:ignore msword openxmlformats officedocument wordprocessingml
 export type ResumeProcessingStatus = 'UPLOADED' | 'PROCESSING' | 'PROCESSED' | 'FAILED';
 
 export type ResumeSectionKey =
@@ -113,8 +112,7 @@ export interface ResumeDetailResponse {
   resume: ResumeDetail;
 }
 
-export const ACCEPTED_RESUME_TYPES =
-  '.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
+export const ACCEPTED_RESUME_TYPES = '.pdf,.txt,application/pdf,text/plain';
 
 export const MAX_RESUME_SIZE_LABEL = '5 MB';
 

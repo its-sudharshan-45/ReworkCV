@@ -1,4 +1,3 @@
-// cspell:ignore openxmlformats officedocument wordprocessingml
 import { describe, expect, it } from 'vitest';
 import {
   formatFileSize,
@@ -23,18 +22,34 @@ describe('resume status utils', () => {
       type: 'image/png',
     });
 
-    expect(validateResumeFile(file)).toBe('Only PDF, DOC, DOCX, and plain text resumes are supported.');
+    expect(validateResumeFile(file)).toBe('Unsupported file format. Please upload a PDF or TXT resume.');
   });
 
-  it('accepts supported PDF and Word files within size limits', () => {
+  it('accepts supported PDF and TXT files within size limits', () => {
     const pdfFile = new File(['content'], 'resume.pdf', {
       type: 'application/pdf',
+    });
+    const txtFile = new File(['content'], 'resume.txt', {
+      type: 'text/plain',
+    });
+
+    expect(validateResumeFile(pdfFile)).toBeNull();
+    expect(validateResumeFile(txtFile)).toBeNull();
+  });
+
+  it('rejects Word documents', () => {
+    const docFile = new File(['content'], 'resume.doc', {
+      type: 'application/msword',
     });
     const docxFile = new File(['content'], 'resume.docx', {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
-    expect(validateResumeFile(pdfFile)).toBeNull();
-    expect(validateResumeFile(docxFile)).toBeNull();
+    expect(validateResumeFile(docFile)).toBe(
+      'Unsupported file format. Please upload a PDF or TXT resume.',
+    );
+    expect(validateResumeFile(docxFile)).toBe(
+      'Unsupported file format. Please upload a PDF or TXT resume.',
+    );
   });
 });

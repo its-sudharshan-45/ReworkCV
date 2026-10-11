@@ -70,7 +70,20 @@ describe('extractResumeText', () => {
   it('throws 400 VALIDATION_ERROR for unsupported file format', async () => {
     const buffer = Buffer.from('some content here that is longer than 10 chars', 'utf8');
     await expect(extractResumeText(buffer, 'image/png')).rejects.toThrow(
-      'Unsupported resume file format',
+      'Unsupported file format. Please upload a PDF or TXT resume.',
+    );
+  });
+
+  it('rejects Word MIME types without attempting extraction', async () => {
+    const buffer = Buffer.from('PK\x03\x04 fake docx content longer than ten', 'utf8');
+    await expect(
+      extractResumeText(
+        buffer,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ),
+    ).rejects.toThrow('Unsupported file format. Please upload a PDF or TXT resume.');
+    await expect(extractResumeText(buffer, 'application/msword')).rejects.toThrow(
+      'Unsupported file format. Please upload a PDF or TXT resume.',
     );
   });
 });

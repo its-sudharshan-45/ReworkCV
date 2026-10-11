@@ -18,23 +18,18 @@ function normalizeExtension(filename: string): string {
   return path.extname(filename).toLowerCase();
 }
 
+function normalizeMimeType(mimeType: string | undefined): string {
+  return (mimeType ?? '').split(';', 1)[0].trim().toLowerCase();
+}
+
 /** Expected magic bytes per extension — the client-supplied MIME type is
- *  attacker-controlled, so the actual content is verified independently. */
+ *  attacker-controlled, so the actual content is verified independently.
+ *  Only PDF and TXT resumes are supported. */
 function hasExpectedMagic(buffer: Buffer, extension: string): boolean {
   if (buffer.length < 5) return false;
   switch (extension) {
     case '.pdf':
       return buffer.subarray(0, 5).toString('ascii') === '%PDF-';
-    case '.docx':
-      // OOXML is a ZIP archive.
-      return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
-    case '.doc':
-      // OLE compound document, RTF text, or a misnamed OOXML zip.
-      return (
-        (buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0) ||
-        buffer.subarray(0, 5).toString('ascii') === '{\\rtf' ||
-        (buffer[0] === 0x50 && buffer[1] === 0x4b)
-      );
     case '.txt': {
       // Plain text must not contain NUL bytes or heavy binary content.
       if (buffer.includes(0x00)) return false;
@@ -58,13 +53,6 @@ function mimeMatchesExtension(mimeType: string, extension: string): boolean {
       return mimeType === 'application/pdf';
     case '.txt':
       return mimeType === 'text/plain';
-    case '.doc':
-      return mimeType === 'application/msword' || mimeType === 'application/octet-stream';
-    case '.docx':
-      return (
-        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        mimeType === 'application/octet-stream'
-      );
     default:
       return false;
   }
@@ -93,16 +81,16 @@ export function validateResumeUpload(
   const extension = normalizeExtension(file.originalname);
   if (!SUPPORTED_RESUME_EXTENSIONS.includes(extension as (typeof SUPPORTED_RESUME_EXTENSIONS)[number])) {
     throw new AppError(
-      'Unsupported resume file type. Upload a PDF or plain text resume.',
+      'Unsupported file format. Please upload a PDF or TXT resume.',
       400,
       'VALIDATION_ERROR',
     );
   }
 
-  const mimeType = file.mimetype.toLowerCase();
+  const mimeType = normalizeMimeType(file.mimetype);
   if (!SUPPORTED_RESUME_MIME_TYPES.includes(mimeType as (typeof SUPPORTED_RESUME_MIME_TYPES)[number])) {
     throw new AppError(
-      'Unsupported resume MIME type. Upload a PDF or plain text resume.',
+      'Unsupported file format. Please upload a PDF or TXT resume.',
       400,
       'VALIDATION_ERROR',
     );
@@ -110,15 +98,15 @@ export function validateResumeUpload(
 
   if (!mimeMatchesExtension(mimeType, extension)) {
     throw new AppError(
-      'Resume file type and extension do not match. Upload a PDF or plain text resume.',
+      'Unsupported file format. Please upload a PDF or TXT resume.',
       400,
       'VALIDATION_ERROR',
     );
   }
 
-  if (!hasExpectedMagic(file.buffer, extension)) {
+  if (!file.buffer || !hasExpectedMagic(file.buffer, extension)) {
     throw new AppError(
-      'Resume file content does not match its declared type. Upload a valid PDF or plain text resume.',
+      'Resume file content does not match its declared type. Please upload a valid PDF or TXT resume.',
       400,
       'VALIDATION_ERROR',
     );

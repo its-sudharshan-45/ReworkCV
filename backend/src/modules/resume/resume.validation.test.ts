@@ -35,7 +35,35 @@ describe('validateResumeUpload', () => {
         createFile({ originalname: 'resume.png', mimetype: 'image/png' }),
         5_242_880,
       ),
-    ).toThrow(AppError);
+    ).toThrow('Unsupported file format. Please upload a PDF or TXT resume.');
+  });
+
+  it('rejects Word documents before processing', () => {
+    const docxZip = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    expect(() =>
+      validateResumeUpload(
+        createFile({
+          originalname: 'resume.docx',
+          mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          buffer: docxZip,
+          size: docxZip.length,
+        }),
+        5_242_880,
+      ),
+    ).toThrow('Unsupported file format. Please upload a PDF or TXT resume.');
+
+    const docOle = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1]);
+    expect(() =>
+      validateResumeUpload(
+        createFile({
+          originalname: 'resume.doc',
+          mimetype: 'application/msword',
+          buffer: docOle,
+          size: docOle.length,
+        }),
+        5_242_880,
+      ),
+    ).toThrow('Unsupported file format. Please upload a PDF or TXT resume.');
   });
 
   it('rejects files above configured limit', () => {
