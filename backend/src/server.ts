@@ -5,6 +5,8 @@ import { logger } from './config/logger.js';
 
 const app = createApp();
 
-app.listen(env.BACKEND_PORT, () => {
-  logger.info({ port: env.BACKEND_PORT }, 'UpSkilr API server started');
+const port = env.PORT ?? env.BACKEND_PORT;
+
+app.listen(port, '0.0.0.0', () => {
+  logger.info({ port }, 'UpSkilr API server started');
 });
