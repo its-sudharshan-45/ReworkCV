@@ -1,12 +1,22 @@
 import { z } from 'zod';
 
+// API base URL: absolute https URL in most deploys, or a same-origin path
+// (e.g. `/api/v1`) when frontend and backend share one domain behind a
+// routing layer (Vercel services rewrites, reverse proxy). Same-origin keeps
+// browser traffic on the public route; no service binding applies because
+// bindings resolve server-side only, never in the browser or at build time.
+const apiUrlSchema = z.union([
+  z.string().url(),
+  z.string().regex(/^\/[^\s]*$/, 'Must be an absolute URL or a same-origin path like /api/v1'),
+]);
+
 const clientEnvSchema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_ANON_KEY: z.string().min(1),
-  VITE_API_URL: z.string().url(),
+  VITE_API_URL: apiUrlSchema,
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  NEXT_PUBLIC_API_URL: z.string().url(),
+  NEXT_PUBLIC_API_URL: apiUrlSchema,
 });
 
 // Dev/test fallbacks. These must never silently ship to production, so the
