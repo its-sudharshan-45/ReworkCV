@@ -40,11 +40,19 @@ export function AuthCallbackPage() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          if (isMounted) {
-            setErrorMsg('OAuth authentication failed. Redirecting to login…');
-            redirectLater(`${AUTH_ROUTES.login}?error=oauth_exchange_failed`, 1500);
+          // The client may already have established the session from the
+          // URL itself (detectSessionInUrl), winning a race with this manual
+          // exchange — only fail when no session exists.
+          const {
+            data: { session: existingSession },
+          } = await supabase.auth.getSession();
+          if (!existingSession) {
+            if (isMounted) {
+              setErrorMsg('OAuth authentication failed. Redirecting to login…');
+              redirectLater(`${AUTH_ROUTES.login}?error=oauth_exchange_failed`, 1500);
+            }
+            return;
           }
-          return;
         }
       } else {
         // Check if session was already picked up from URL hash

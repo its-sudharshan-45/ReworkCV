@@ -67,4 +67,41 @@ describe('AuthCallbackPage', () => {
       replace: true,
     });
   });
+
+  it('proceeds to the destination when the exchange fails but a session exists', async () => {
+    searchParams = new URLSearchParams('code=pkce-code&next=/analysis');
+    exchangeCodeForSession.mockResolvedValue({
+      data: {},
+      error: { message: 'code has already been used' },
+    });
+    // The client auto-detected the session from the URL first.
+    getSession.mockResolvedValue({ data: { session: { access_token: 'token' } } });
+
+    render(<AuthCallbackPage />);
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('/analysis', { replace: true });
+    });
+    expect(navigate).not.toHaveBeenCalledWith(
+      expect.stringContaining('error='),
+      expect.anything(),
+    );
+  });
+
+  it('redirects to login when the exchange fails and no session exists', async () => {
+    vi.useFakeTimers();
+    searchParams = new URLSearchParams('code=stale-code');
+    exchangeCodeForSession.mockResolvedValue({
+      data: {},
+      error: { message: 'invalid grant' },
+    });
+    getSession.mockResolvedValue({ data: { session: null } });
+
+    render(<AuthCallbackPage />);
+
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(navigate).toHaveBeenCalledWith('/login?error=oauth_exchange_failed', {
+      replace: true,
+    });
+  });
 });
