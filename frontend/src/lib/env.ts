@@ -19,12 +19,46 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: apiUrlSchema,
 });
 
+// API base path served by the backend (see backend/src/app.ts).
+const API_PATH_SUFFIX = '/api/v1';
+
 // Dev/test fallbacks. These must never silently ship to production, so the
 // prod-build guard below rejects a build where any value was NOT explicitly
 // provided (i.e. fell through to these sentinels).
 const FALLBACK_SUPABASE_URL = 'https://example.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY = 'test-anon-key';
 const FALLBACK_API_URL = 'http://localhost:4000/api/v1';
+
+/**
+ * Normalizes the configured API base URL.
+ *
+ * Recovers from the common misconfiguration of pointing VITE_API_URL at the
+ * bare backend host (e.g. `https://api.example.com`), which would otherwise
+ * send every request to an unmounted path (`/resumes` instead of
+ * `/api/v1/resumes`) and surface as a misleading CORS/404 failure.
+ * Only fills in the default path when none is present and only trims
+ * redundant trailing slashes (which would otherwise produce `//` paths) —
+ * explicitly configured paths are never altered.
+ */
+export function normalizeApiUrl(raw: string): string {
+  const trimmed = raw.trim();
+
+  // Same-origin path (e.g. `/api/v1` behind a reverse proxy): only drop
+  // trailing slashes, never rewrite the path itself.
+  if (trimmed.startsWith('/') && !trimmed.includes('://')) {
+    return trimmed.length > 1 ? trimmed.replace(/\/+$/, '') : trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const pathname = url.pathname.replace(/\/+$/, '');
+    url.pathname = pathname === '' ? API_PATH_SUFFIX : pathname;
+    return url.toString().replace(/\/+$/, '');
+  } catch {
+    // Not a parseable URL — leave it for schema validation to reject.
+    return trimmed;
+  }
+}
 
 /**
  * Reads an explicitly configured value (Vite `import.meta.env` first, then
@@ -62,7 +96,7 @@ const explicitApiUrl = readExplicitEnv('VITE_API_URL', 'NEXT_PUBLIC_API_URL');
 
 const rawSupabaseUrl = explicitSupabaseUrl ?? FALLBACK_SUPABASE_URL;
 const rawSupabaseAnonKey = explicitSupabaseAnonKey ?? FALLBACK_SUPABASE_ANON_KEY;
-const rawApiUrl = explicitApiUrl ?? FALLBACK_API_URL;
+const rawApiUrl = normalizeApiUrl(explicitApiUrl ?? FALLBACK_API_URL);
 
 // Fail-closed in production: every value must be explicitly configured.
 // In dev/test the fallbacks keep Vitest and local startup working.
