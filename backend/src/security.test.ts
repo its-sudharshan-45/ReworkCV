@@ -45,6 +45,31 @@ describe('security hardening', () => {
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 
+  it('rejects CORS preflight from non-allowlisted origins without ACAO headers', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .options('/api/v1/resumes')
+      .set('Origin', 'https://evil.example.com')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'authorization,content-type');
+
+    // Matches the production failure signature: the browser reports "No
+    // 'Access-Control-Allow-Origin' header is present" and blocks the call.
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('answers CORS preflight from allowlisted origins with ACAO headers', async () => {
+    const app = createApp();
+    const response = await request(app)
+      .options('/api/v1/resumes')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'authorization,content-type');
+
+    expect(response.status).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+  });
+
   it('mints a fresh request id for untrusted client-supplied ids', async () => {
     const app = createApp();
     const response = await request(app)

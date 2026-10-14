@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { logger } from './config/logger.js';
 import { AppError } from './utils/errors.js';
 import { correlationLogger, httpLogger } from './middleware/logging.middleware.js';
 import { requestIdMiddleware } from './middleware/request-id.middleware.js';
@@ -55,6 +56,11 @@ export function createApp() {
           return;
         }
 
+        // Observable rejection: a missing ACAO header surfaces in browsers as
+        // an opaque CORS error, so log the offending origin server-side with
+        // the configured allowlist shape (never values of secrets) to make
+        // deployment misconfiguration diagnosable from service logs.
+        logger.warn({ origin, allowedOriginCount: allowedOrigins.length }, 'Rejected CORS origin not in allowlist');
         callback(null, false);
       },
       credentials: true,
