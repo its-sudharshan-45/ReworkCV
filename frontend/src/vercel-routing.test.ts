@@ -141,14 +141,25 @@ describe('vercel deployment routing', () => {
     expect(catchAllIndex).toBeGreaterThan(apiIndex);
   });
 
-  it('checks the service filesystem before the SPA fallback', () => {
+  it('keeps service rewrites within the Vercel services schema', () => {
+    // Vercel rejects unknown properties in service rewrites (e.g. `handle`
+    // is top-level only). Only source/destination-style keys are allowed.
+    const allowedKeys = new Set(['source', 'destination', 'has', 'missing']);
+    for (const [name, service] of Object.entries(config.services ?? {})) {
+      for (const rule of service.rewrites ?? []) {
+        for (const key of Object.keys(rule)) {
+          expect(allowedKeys.has(key), `${name} rewrite key "${key}"`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('falls back to the SPA shell inside the frontend service', () => {
     const serviceRewrites = config.services?.frontend?.rewrites ?? [];
-    const filesystemIndex = serviceRewrites.findIndex((r) => r.handle === 'filesystem');
-    const fallbackIndex = serviceRewrites.findIndex(
+    const fallback = serviceRewrites.find(
       (r) => r.source === '/(.*)' && r.destination === '/index.html',
     );
-    expect(filesystemIndex).toBeGreaterThanOrEqual(0);
-    expect(fallbackIndex).toBeGreaterThan(filesystemIndex);
+    expect(fallback).toBeDefined();
   });
 
   it('declares both services with the expected roots', () => {
