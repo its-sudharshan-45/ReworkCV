@@ -76,6 +76,20 @@ npm run dev:backend   # API server on http://localhost:4000
 npm run dev:frontend  # Web client on http://localhost:3000
 ```
 
+### 4. Deploy to Vercel
+
+The repository-root [`vercel.json`](./vercel.json) is the canonical multi-service
+configuration: it routes `/api/*` to the Express backend and all other paths to
+the Vite frontend. Set the Vercel project's **Root Directory** to the repository
+root so this configuration is loaded. The frontend also contains a
+[`frontend/vercel.json`](./frontend/vercel.json) SPA fallback for projects whose
+Root Directory is set to `frontend`; do not remove it in that deployment mode.
+
+After changing either Vercel configuration, deploy a new production build and
+verify that `https://<production-domain>/auth/callback` returns the frontend
+application shell rather than a Vercel `NOT_FOUND` response. Supabase's
+production redirect URL must remain exactly the deployed callback URL.
+
 ---
 
 ## 🧪 Quality & Verification Suite
