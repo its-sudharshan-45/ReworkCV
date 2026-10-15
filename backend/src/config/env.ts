@@ -1,5 +1,6 @@
 // cspell:ignore huggingface
 import { z } from 'zod';
+import { parseCorsOrigins } from './cors.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -98,7 +99,7 @@ function loadEnv(): Env {
 
   // Production fail-closed: never allow wildcard CORS with credentials.
   if (parsed.data.NODE_ENV === 'production') {
-    const origins = parsed.data.CORS_ORIGIN.split(',').map((o) => o.trim());
+    const origins = parseCorsOrigins(parsed.data.CORS_ORIGIN);
     if (origins.includes('*')) {
       console.error('Invalid environment configuration: CORS_ORIGIN must not contain "*" in production.');
       process.exit(1);
