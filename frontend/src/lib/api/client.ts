@@ -31,10 +31,24 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${clientEnv.VITE_API_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${clientEnv.VITE_API_URL}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    // Transport-level failure: DNS, connection refused, offline, or a CORS
+    // rejection (no Access-Control-Allow-Origin header). These reject the
+    // fetch promise instead of returning a response, so without this mapping
+    // callers only see an opaque TypeError with no actionable message.
+    throw new ApiClientError(0, {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: 'Could not reach the server. Check your connection and try again.',
+      },
+    });
+  }
 
   if (!response.ok) {
     let body: ApiErrorBody;
