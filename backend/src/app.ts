@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { parseCorsOrigins, isCorsOriginAllowed } from './config/cors.js';
 import { logger } from './config/logger.js';
 import { AppError } from './utils/errors.js';
 import { correlationLogger, httpLogger } from './middleware/logging.middleware.js';
@@ -47,11 +48,11 @@ export function createApp() {
           return;
         }
 
-        const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+        const allowedOrigins = parseCorsOrigins(env.CORS_ORIGIN);
         // Never treat '*' as an allowed origin: with credentials enabled the
         // browser would send cookies/Authorization to any site (credential
         // leakage). Configure explicit origins instead.
-        if (allowedOrigins.includes(origin)) {
+        if (isCorsOriginAllowed(origin, allowedOrigins)) {
           callback(null, true);
           return;
         }
