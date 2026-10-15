@@ -102,6 +102,24 @@ npm ci && npm run build      # emits frontend/dist/
 ## 5. Post-deploy verification checklist
 
 1. `GET /api/v1/health` → `status: ok`, `checks.database.status: ok`.
+2. CORS allowlist: from any machine, confirm the deployed frontend origin is
+   admitted (expect `access-control-allow-origin` to echo the origin and
+   preflight to return `204`):
+   ```bash
+   curl -s -i https://<backend-host>/api/v1/health -H "Origin: https://<frontend-host>"
+   curl -s -i -X OPTIONS https://<backend-host>/api/v1/resumes \
+     -H "Origin: https://<frontend-host>" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: authorization,content-type"
+   ```
+   A missing `access-control-allow-origin` header means the frontend origin
+   is absent from backend `CORS_ORIGIN` — browsers then block every API call
+   (upload, process, analyze) and the UI can only report a generic analysis
+   failure. Fix by adding the exact `https://<frontend-host>` origin to
+   `CORS_ORIGIN` (comma-separated, no trailing slash) and redeploying the
+   backend. The server startup log records `corsOriginCount` (count only,
+   never values) and rejected origins are logged with
+   `Rejected CORS origin not in allowlist` for confirmation.
 2. Unauthenticated `GET /api/v1/resumes` → `401 AUTHENTICATION_ERROR` with
    `{ error: { code, message, requestId } }` shape.
 3. With a dedicated test account + isolated test data only: signup/login →
