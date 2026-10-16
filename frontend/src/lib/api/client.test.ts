@@ -46,6 +46,28 @@ describe('apiFetch', () => {
     );
   });
 
+  it('maps client-side timeouts to TIMEOUT_ERROR instead of NETWORK_ERROR', async () => {
+    // Slow analyze-job reports must resolve to an actionable timeout, not a
+    // misleading "check your connection" message. The loading stage then
+    // clears via the caller finally-block instead of hanging on "Preparing".
+    mockFetchOnce(() => Promise.reject(new DOMException('Timeout', 'TimeoutError')));
+
+    const failure = await apiFetch('/resumes/id/analyze-job').catch((err: unknown) => err);
+    expect(failure).toBeInstanceOf(ApiClientError);
+    expect((failure as ApiClientError).code).toBe('TIMEOUT_ERROR');
+    expect((failure as ApiClientError).message).toContain('timed out');
+  });
+
+  it('maps AbortError rejections to TIMEOUT_ERROR', async () => {
+    const abortError = new Error('The operation was aborted.');
+    abortError.name = 'AbortError';
+    mockFetchOnce(() => Promise.reject(abortError));
+
+    const failure = await apiFetch('/resumes/id/analyze-job').catch((err: unknown) => err);
+    expect(failure).toBeInstanceOf(ApiClientError);
+    expect((failure as ApiClientError).code).toBe('TIMEOUT_ERROR');
+  });
+
   it('returns the parsed body for successful JSON responses (report rendering path)', async () => {
     mockFetchOnce(() =>
       Promise.resolve(jsonResponse({ success: true, data: { matchScore: 82 } })),
