@@ -6,12 +6,17 @@
  * Browsers send `Origin: <scheme>://<host>` with no path, so matching is
  * intentionally exact: prefix/substring matching would let sibling or
  * lookalike origins (e.g. `https://app.example.com.evil.com`) through.
+ *
+ * Dashboard values are normalized by stripping trailing slashes so a
+ * copy-pasted `https://app.example.com/` still matches the browser-sent
+ * `https://app.example.com`. Incoming `Origin` headers are never normalized:
+ * browsers never send a trailing slash, so a slashed input stays rejected.
  */
 export function parseCorsOrigins(header: string | undefined): string[] {
   if (!header) return [];
   return header
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter((origin) => origin.length > 0);
 }
 

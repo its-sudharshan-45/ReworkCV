@@ -18,6 +18,17 @@ describe('parseCorsOrigins', () => {
     ]);
   });
 
+  it('strips trailing slashes from dashboard values (copy-paste hardening)', () => {
+    // Operators often copy the frontend URL from the browser address bar with
+    // a trailing slash. Browsers send `Origin` without a path, so without
+    // normalization the allowlist would never match and every browser call
+    // would fail CORS. Stripping here preserves exact-host matching.
+    expect(parseCorsOrigins('https://a.example.com/, https://b.example.com///')).toEqual([
+      'https://a.example.com',
+      'https://b.example.com',
+    ]);
+  });
+
   it('returns an empty list when unset', () => {
     expect(parseCorsOrigins(undefined)).toEqual([]);
     expect(parseCorsOrigins('')).toEqual([]);
@@ -95,5 +106,15 @@ describe('production CORS allowlist regression', () => {
 
     const response = await preflight(app, 'https://evil.example.com');
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('admits the production origin even when the dashboard value has a trailing slash', async () => {
+    const app = await bootAppWithAllowlist('https://reworkcv-kappa.vercel.app/');
+
+    const response = await preflight(app, 'https://reworkcv-kappa.vercel.app');
+    expect(response.status).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'https://reworkcv-kappa.vercel.app',
+    );
   });
 });
