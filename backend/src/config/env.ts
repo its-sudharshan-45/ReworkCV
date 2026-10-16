@@ -15,7 +15,11 @@ const envSchema = z.object({
   RESUME_MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(5_242_880),
   // Max concurrent memory-intensive resume requests (upload + process) per
   // process. Worst-case RAM ≈ limit × (max file size + parse overhead).
-  RESUME_UPLOAD_MAX_CONCURRENT: z.coerce.number().int().min(1).max(64).default(4),
+  // Default 2 keeps a 512MB instance safe: ~110MB baseline + ~65MB quantized
+  // NER + ORT overhead leaves headroom for 2 × (5MB file + ~10MB pdf-parse
+  // working set). The previous default of 4 assumed fp32 headroom that does
+  // not exist on the starter instance.
+  RESUME_UPLOAD_MAX_CONCURRENT: z.coerce.number().int().min(1).max(64).default(2),
   // Defensive cap on extracted plain text per resume. Genuine resumes are
   // tens of KB; beyond this the document is pathological (e.g. a 5MB PDF of
   // undelimited text) and would waste NER/CPU cycles and DB storage.

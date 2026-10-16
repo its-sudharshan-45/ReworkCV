@@ -52,8 +52,13 @@ export class TransformersAdapter implements IModelAdapter {
         'Loading Hugging Face Transformers model pipeline...',
       );
 
+      // transformers.js v3 selects the weight file from `dtype` (not the
+      // legacy v2 `quantized` flag): dtype 'q8' loads `model_quantized.onnx`
+      // (~66MB for resume-ner) while the default fp32 loads `model.onnx`
+      // (~261MB) and OOMs a 512MB instance once request buffers are added.
       const pipelineInstance = await pipeline(task as Parameters<typeof pipeline>[0], manifest.hub.modelId, {
-        quantized: isQuantized,
+        dtype: isQuantized ? 'q8' : 'fp32',
+        device: 'cpu',
         revision: manifest.hub.revision || 'main',
       } as Record<string, unknown>);
 

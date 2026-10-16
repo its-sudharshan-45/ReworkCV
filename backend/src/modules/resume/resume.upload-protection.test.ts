@@ -89,8 +89,11 @@ describe('Upload resource protection', () => {
   });
 
   it('exposes a sane default concurrency limit', () => {
-    expect(getUploadConcurrencyLimit()).toBeGreaterThanOrEqual(1);
-    expect(getUploadConcurrencyLimit()).toBeLessThanOrEqual(64);
+    // 512MB Render budget: ~110MB baseline + ~65MB quantized NER + ORT
+    // overhead leaves room for 2 × (5MB file + pdf-parse working set).
+    // A default above 2 reintroduces the production OOM (fp32 NER alone is
+    // 261MB of weights before any request buffers).
+    expect(getUploadConcurrencyLimit()).toBe(2);
     expect(getActiveUploadCount()).toBe(0);
   });
 

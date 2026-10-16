@@ -93,8 +93,12 @@ export class ResumeService {
 
     try {
       const startTime = Date.now();
-      const fileBuffer = await this.storage.downloadObject(record.storage_path);
+      let fileBuffer: Buffer | null = await this.storage.downloadObject(record.storage_path);
+      const fileSizeBytes = fileBuffer.length;
       const extractedText = await extractResumeText(fileBuffer, record.mime_type);
+      // Release the raw file bytes before NER/scoring: pdf-parse can hold
+      // multiples of the file size and the buffer is not needed past this point.
+      fileBuffer = null;
 
       if (!extractedText || extractedText.trim().length < 10) {
         throw new AppError('Could not extract meaningful text from resume', 400, 'VALIDATION_ERROR');
@@ -128,9 +132,20 @@ export class ResumeService {
 
       const score = detailedAnalysis.atsScore;
       const durationMs = Date.now() - startTime;
+      const mem = process.memoryUsage();
 
       logger.info(
-        { resumeId, userId, entityCount: rawEntities.length, durationMs, atsScore: score },
+        {
+          resumeId,
+          userId,
+          entityCount: rawEntities.length,
+          durationMs,
+          atsScore: score,
+          fileSizeBytes,
+          extractedChars: extractedText.length,
+          rssMB: Math.round(mem.rss / 1048576),
+          heapUsedMB: Math.round(mem.heapUsed / 1048576),
+        },
         'Resume NER extraction and analysis completed successfully',
       );
 

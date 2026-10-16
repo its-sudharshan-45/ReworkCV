@@ -23,7 +23,15 @@ export function getResumeNER(): Promise<unknown> {
       logger.info({ model: 'oksomu/resume-ner' }, 'Initializing Hugging Face Resume NER pipeline via ModelFactory...');
       try {
         const handle = await modelFactory.load('resume-ner');
-        logger.info('Hugging Face Resume NER pipeline initialized successfully via ModelFactory.');
+        const mem = process.memoryUsage();
+        logger.info(
+          {
+            model: 'oksomu/resume-ner',
+            rssMB: Math.round(mem.rss / 1048576),
+            heapUsedMB: Math.round(mem.heapUsed / 1048576),
+          },
+          'Hugging Face Resume NER pipeline initialized successfully via ModelFactory.',
+        );
         return handle.instance;
       } catch (error) {
         nerPipelinePromise = null;

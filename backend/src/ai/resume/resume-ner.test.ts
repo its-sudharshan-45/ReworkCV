@@ -36,6 +36,16 @@ describe('Hugging Face Resume NER', () => {
     expect(resolved).toBeDefined();
   });
 
+  it('reuses one loaded pipeline across repeated analyses (no per-request reload)', async () => {
+    const { pipeline } = await import('@huggingface/transformers');
+    vi.mocked(pipeline).mockClear();
+    await extractRawEntities('John Doe john@example.com Skills: Java React');
+    await extractRawEntities('John Doe john@example.com Skills: Java React');
+    // One model load for any number of sequential analyses; each analysis
+    // only pays for chunked inference, never a second 261MB weight load.
+    expect(vi.mocked(pipeline)).toHaveBeenCalledTimes(1);
+  });
+
   it('chunks long resume text into 512-token compatible blocks', () => {
     const longText = Array(400).fill('word').join(' ') + '\n\n' + Array(200).fill('test').join(' ');
     const chunks = chunkResumeText(longText, 300);

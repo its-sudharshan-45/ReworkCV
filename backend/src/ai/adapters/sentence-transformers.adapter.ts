@@ -36,8 +36,10 @@ export class SentenceTransformersAdapter implements IModelAdapter {
         'Loading Sentence Transformers feature-extraction pipeline...',
       );
 
+      // transformers.js v3 selects weights via `dtype` (see transformers.adapter).
       const extractor = await pipeline('feature-extraction', manifest.hub.modelId, {
-        quantized: isQuantized,
+        dtype: isQuantized ? 'q8' : 'fp32',
+        device: 'cpu',
         revision: manifest.hub.revision || 'main',
       } as Record<string, unknown>);
 
